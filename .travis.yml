@@ -1,0 +1,14 @@
+language: python
+python:
+  - "3.7"
+install:
+  - pip install --upgrade pip
+  - pip install poetry
+  - poetry install -v
+script:
+  - pytest -v --cov=onelearn tests/
+after_success: coveralls
+cache:
+  pip: true
+  directories:
+    - $HOME/onelearn

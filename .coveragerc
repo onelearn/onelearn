@@ -1,0 +1,8 @@
+[run]
+branch = True
+source = onelearn
+include = */onelearn/*
+
+[report]
+exclude_lines =
+    if verbose
