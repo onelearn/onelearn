@@ -106,3 +106,4 @@ plt.tight_layout()
 plt.savefig(output_filename)
 
 logging.info("Saved result in file %s" % output_filename)
+
