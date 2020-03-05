@@ -259,6 +259,7 @@ class AMFClassifier(object):
         self._classes = set(range(n_classes))
 
     def partial_fit(self, X, y):
+        # TODO: write the docstring
         n_samples, n_features = X.shape
         # First,ensure that X and y are C-contiguous and with float32 dtype
         X, y = check_X_y(
@@ -318,13 +319,13 @@ class AMFClassifier(object):
 
         Parameters
         ----------
-        X : `np.ndarray` or `scipy.sparse.csr_matrix`, shape=(n_samples, n_features)
-            Features matrix to predict for.
+        X : `np.ndarray`, shape=(n_samples, n_features)
+            Features matrix to predict for
 
         Returns
         -------
         output : `np.ndarray`, shape=(n_samples, n_classes)
-            Returns predicted values.
+            Returns the predicted class probabilities
         """
         import numpy as np
 
@@ -424,7 +425,6 @@ class AMFClassifier(object):
         df = pd.DataFrame(data, columns=columns)
         return df
 
-    # TODO: code properties for everything
     @property
     def n_classes(self):
         return self._n_classes

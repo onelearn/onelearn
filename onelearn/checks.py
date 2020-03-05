@@ -1,3 +1,5 @@
+# Authors: Stephane Gaiffas <stephane.gaiffas@gmail.com>
+# License: BSD 3 clause
 # This code is from scikit-learn with some minor changes
 
 # Authors: Olivier Grisel
@@ -7,7 +9,7 @@
 #          Alexandre Gramfort
 #          Nicolas Tresegnie
 #          Sylvain Marie
-# License: BSD 3 clause
+
 
 import warnings
 import numbers
