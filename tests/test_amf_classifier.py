@@ -1,5 +1,5 @@
 # Authors: Stephane Gaiffas <stephane.gaiffas@gmail.com>
-# License: GPL 3.0
+# License: BSD 3 clause
 
 # py.test -rA
 
@@ -10,11 +10,46 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
 
 from onelearn import AMFClassifier
+from . import parameter_test_with_min, parameter_test_with_type
+
+#     def test_online_forest_n_features_differs(self):
+#         n_samples = 1000
+#         n_classes = 2
+#         n_trees = 20
+#
+#         X, y = make_classification(n_samples=n_samples, n_features=10,
+#                                    n_redundant=0,
+#                                    n_informative=2, random_state=1,
+#                                    n_clusters_per_class=1)
+#         rng = np.random.RandomState(2)
+#         X += 2 * rng.uniform(size=X.shape)
+#
+#         of = OnlineForestClassifier(n_classes=2, n_trees=n_trees, seed=123,
+#                                     step=1.,
+#                                     use_aggregation=True)
+#
+#         of.fit(X, y)
+#
+#         X, y = make_classification(n_samples=n_samples, n_features=10,
+#                                    n_redundant=0,
+#                                    n_informative=2, random_state=1,
+#                                    n_clusters_per_class=1)
+#
+#         of.fit(X, y)
+#
+#         X, y = make_classification(n_samples=n_samples, n_features=3,
+#                                    n_redundant=0,
+#                                    n_informative=2, random_state=1,
+#                                    n_clusters_per_class=1)
+#
+#     def test_online_forest_n_classes_differs(self):
+#         pass
 
 
 class TestAMFClassifier(object):
     def test_n_classes(self):
-        self.parameter_test_with_min(
+        parameter_test_with_min(
+            AMFClassifier,
             parameter="n_classes",
             valid_val=3,
             invalid_type_val=2.0,
@@ -35,7 +70,8 @@ class TestAMFClassifier(object):
             clf.n_features = 3
 
     def test_n_estimators(self):
-        self.parameter_test_with_min(
+        parameter_test_with_min(
+            AMFClassifier,
             parameter="n_estimators",
             valid_val=3,
             invalid_type_val=2.0,
@@ -47,7 +83,8 @@ class TestAMFClassifier(object):
         )
 
     def test_step(self):
-        self.parameter_test_with_min(
+        parameter_test_with_min(
+            AMFClassifier,
             parameter="step",
             valid_val=2.0,
             invalid_type_val=0,
@@ -65,7 +102,8 @@ class TestAMFClassifier(object):
         assert amf.loss == "log"
 
     def test_use_aggregation(self):
-        self.parameter_test_with_type(
+        parameter_test_with_type(
+            AMFClassifier,
             parameter="step",
             valid_val=False,
             invalid_type_val=0,
@@ -74,7 +112,8 @@ class TestAMFClassifier(object):
         )
 
     def test_dirichlet(self):
-        self.parameter_test_with_min(
+        parameter_test_with_min(
+            AMFClassifier,
             parameter="dirichlet",
             valid_val=0.1,
             invalid_type_val=0,
@@ -86,7 +125,8 @@ class TestAMFClassifier(object):
         )
 
     def test_split_pure(self):
-        self.parameter_test_with_type(
+        parameter_test_with_type(
+            AMFClassifier,
             parameter="split_pure",
             valid_val=False,
             invalid_type_val=0,
@@ -95,7 +135,8 @@ class TestAMFClassifier(object):
         )
 
     def test_random_state(self):
-        self.parameter_test_with_min(
+        parameter_test_with_min(
+            AMFClassifier,
             parameter="random_state",
             valid_val=4,
             invalid_type_val=2.0,
@@ -113,7 +154,8 @@ class TestAMFClassifier(object):
         assert amf._random_state == -1
 
     def test_n_jobs(self):
-        self.parameter_test_with_min(
+        parameter_test_with_min(
+            AMFClassifier,
             parameter="n_jobs",
             valid_val=4,
             invalid_type_val=2.0,
@@ -125,7 +167,8 @@ class TestAMFClassifier(object):
         )
 
     def test_verbose(self):
-        self.parameter_test_with_type(
+        parameter_test_with_type(
+            AMFClassifier,
             parameter="verbose",
             valid_val=False,
             invalid_type_val=0,
@@ -135,7 +178,6 @@ class TestAMFClassifier(object):
 
     def test_repr(self):
         amf = AMFClassifier(n_classes=3)
-        print(repr(amf))
         assert (
             repr(amf) == "AMFClassifier(n_classes=3, n_estimators=10, "
             "step=1.0, loss=log, use_aggregation=True, "
@@ -144,7 +186,6 @@ class TestAMFClassifier(object):
         )
 
         amf.n_estimators = 42
-        print(repr(amf))
         assert (
             repr(amf) == "AMFClassifier(n_classes=3, n_estimators=42, "
             "step=1.0, loss=log, use_aggregation=True, "
@@ -153,7 +194,6 @@ class TestAMFClassifier(object):
         )
 
         amf.verbose = False
-        print(repr(amf))
         assert (
             repr(amf) == "AMFClassifier(n_classes=3, n_estimators=42, "
             "step=1.0, loss=log, use_aggregation=True, "
@@ -232,122 +272,3 @@ class TestAMFClassifier(object):
         y_pred = clf.predict_proba(X_test)
         score = roc_auc_score(y_test, y_pred[:, 1])
         assert score > 0.9
-
-    @staticmethod
-    def parameter_test_with_min(
-        parameter,
-        valid_val,
-        invalid_type_val,
-        invalid_val,
-        min_value=None,
-        min_value_strict=None,
-        min_value_str=None,
-        mandatory=False,
-        fixed_type=None,
-    ):
-        """Tests for an attribute of integer type
-
-        Parameters
-        ----------
-        valid_val
-            A valid value for the parameter
-
-        invalid_type_val
-            A value with invalid type
-
-        invalid_val
-            A value which is invalid because of its value
-
-        parameter
-        min_value
-        mandatory
-
-        Returns
-        -------
-
-        """
-
-        def get_params(param, val):
-            """If the parameter is not 'n_classes', we need to specify
-            `n_classes`, since it's mandatory to create the class
-            """
-            if param == "n_classes":
-                return {param: val}
-            else:
-                return {param: val, "n_classes": 2}
-
-        # If the parameter is mandatory, we check that an exception is raised
-        # if not passed to the constructor
-        if mandatory:
-            with pytest.raises(TypeError) as exc_info:
-                AMFClassifier()
-            assert exc_info.type is TypeError
-            assert (
-                exc_info.value.args[0] == "__init__() missing 1 required "
-                "positional argument: '%s'" % parameter
-            )
-
-        if min_value is not None and min_value_strict is not None:
-            raise ValueError(
-                "You can't set both `min_value` and "
-                "`min_value_strict` at the same time"
-            )
-
-        clf = AMFClassifier(**get_params(parameter, valid_val))
-        assert getattr(clf, parameter) == valid_val
-
-        # If valid_val is valid, than valid_val + 1 is also valid
-        setattr(clf, parameter, valid_val + 1)
-        assert getattr(clf, parameter, valid_val + 1)
-
-        with pytest.raises(
-            ValueError,
-            match="`%s` must be of type `%s`" % (parameter, fixed_type.__name__),
-        ):
-            setattr(clf, parameter, invalid_type_val)
-
-        with pytest.raises(
-            ValueError,
-            match="`%s` must be of type `%s`" % (parameter, fixed_type.__name__),
-        ):
-            AMFClassifier(**get_params(parameter, invalid_type_val))
-
-        if min_value is not None:
-            with pytest.raises(
-                ValueError, match="`%s` must be >= %s" % (parameter, min_value_str)
-            ):
-                setattr(clf, parameter, invalid_val)
-
-            with pytest.raises(
-                ValueError, match="`%s` must be >= %s" % (parameter, min_value_str)
-            ):
-                AMFClassifier(**get_params(parameter, invalid_val))
-
-        if min_value_strict is not None:
-            with pytest.raises(
-                ValueError, match="`%s` must be > %s" % (parameter, min_value_str)
-            ):
-                setattr(clf, parameter, invalid_val)
-
-            with pytest.raises(
-                ValueError, match="`%s` must be > %s" % (parameter, min_value_str)
-            ):
-                AMFClassifier(**get_params(parameter, invalid_val))
-
-        clf = AMFClassifier(**get_params(parameter, valid_val))
-        # TODO: we should not need to change the dtype here
-        X = np.random.randn(2, 2)
-        y = np.array([0.0, 1.0])
-        clf.partial_fit(X, y)
-        with pytest.raises(
-            ValueError,
-            match="You cannot modify `%s` " "after calling `partial_fit`" % parameter,
-        ):
-            setattr(clf, parameter, valid_val)
-
-    @staticmethod
-    def parameter_test_with_type(
-        parameter, valid_val, invalid_type_val, mandatory, fixed_type
-    ):
-        # TODO: code it
-        pass
