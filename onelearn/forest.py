@@ -261,7 +261,6 @@ class AMFClassifier(object):
 
     def partial_fit(self, X, y):
         # TODO: write the docstring
-        n_samples, n_features = X.shape
         # First,ensure that X and y are C-contiguous and with float32 dtype
         X, y = check_X_y(
             X,
@@ -280,6 +279,7 @@ class AMFClassifier(object):
             y_numeric=True,
             estimator="AMFClassifier",
         )
+        n_samples, n_features = X.shape
 
         if y.min() < 0:
             raise ValueError("All the values in `y` must be non-negative")
