@@ -3,7 +3,7 @@
 
 import numpy as np
 from numba import jitclass, njit
-from numba import types
+from numba import types, _helperlib
 from numba.types import float32, boolean, uint32, string, void, int32
 
 from .checks import check_X_y, check_array
@@ -21,7 +21,6 @@ spec = [
     ("dirichlet", float32),
     ("split_pure", boolean),
     ("n_jobs", uint32),
-    ("random_state", int32),
     ("verbose", boolean),
     ("trees", types.List(TreeClassifier.class_type.instance_type, reflected=True)),
     ("samples", SamplesCollection.class_type.instance_type),
@@ -45,7 +44,6 @@ class AMFClassifierNoPython(object):
         dirichlet,
         split_pure,
         n_jobs,
-        random_state,
         verbose,
     ):
 
@@ -58,9 +56,7 @@ class AMFClassifierNoPython(object):
         self.dirichlet = dirichlet
         self.split_pure = split_pure
         self.n_jobs = n_jobs
-        self.random_state = random_state
         self.verbose = verbose
-
         self.iteration = 0
 
         samples = SamplesCollection()
@@ -300,7 +296,6 @@ class AMFClassifier(object):
                 self.dirichlet,
                 self.split_pure,
                 self.n_jobs,
-                self._random_state,
                 self.verbose,
             )
         else:
@@ -310,8 +305,9 @@ class AMFClassifier(object):
                     "`partial_fit` was first called with n_features=%d while "
                     "n_features=%d in this call" % (self.n_features, n_features)
                 )
-
+        self._set_random_state()
         self.no_python.partial_fit(X, y)
+        self._put_back_random_state()
         return self
 
     def predict_proba(self, X):
@@ -356,7 +352,9 @@ class AMFClassifier(object):
                     "`partial_fit` was called with n_features=%d while `predict_proba` "
                     "received n_features=%d" % (self.n_features, n_features)
                 )
+        self._set_random_state()
         predict_proba(self.no_python, X, scores)
+        self._put_back_random_state()
         return scores
 
     # def predict(self, X):
@@ -366,6 +364,26 @@ class AMFClassifier(object):
     #         X = safe_array(X, dtype='float32')
     #         scores = self.predict_proba(X)
     #         return scores.argmax(axis=1)
+
+    def _set_random_state(self):
+        # This uses a trick by Alexandre Gramfort,
+        #   see https://github.com/numba/numba/issues/3249
+        if self._random_state >= 0:
+            r = np.random.RandomState(self._random_state)
+            ptr = _helperlib.rnd_get_np_state_ptr()
+            ints, index = r.get_state()[1:3]
+            _helperlib.rnd_set_state(ptr, (index, [int(x) for x in ints]))
+            self._ptr = ptr
+            self._r = r
+
+    def _put_back_random_state(self):
+        # This uses a trick by Alexandre Gramfort,
+        #   see https://github.com/numba/numba/issues/3249
+        if self._random_state >= 0:
+            ptr = self._ptr
+            r = self._r
+            index, ints = _helperlib.rnd_get_state(ptr)
+            r.set_state(("MT19937", ints, index, 0, 0.0))
 
     def get_nodes_df(self, idx_tree):
         import pandas as pd

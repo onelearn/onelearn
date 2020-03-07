@@ -2,8 +2,7 @@
 # License: BSD 3 clause
 
 from math import log
-from random import expovariate
-
+from numpy.random import exponential
 from numba import njit
 from numba.types import float32, boolean, uint32, uint8, void, Tuple
 
@@ -256,7 +255,7 @@ def node_compute_split_time(tree, idx_node, idx_sample):
     # If x_t extends the current range of the node
     if extensions_sum > 0:
         # Sample an exponential with intensity = extensions_sum
-        T = expovariate(extensions_sum)
+        T = exponential(1 / extensions_sum)
         time = tree.nodes.time[idx_node]
         # Splitting time of the node (if splitting occurs)
         split_time = time + T
