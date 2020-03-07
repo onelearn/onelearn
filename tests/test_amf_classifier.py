@@ -10,7 +10,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
 
 from onelearn import AMFClassifier
-from . import parameter_test_with_min, parameter_test_with_type
+from . import parameter_test_with_min, parameter_test_with_type, approx
 
 #     def test_online_forest_n_features_differs(self):
 #         n_samples = 1000
@@ -262,7 +262,7 @@ class TestAMFClassifier(object):
 
     def test_performance_on_moons(self):
         n_samples = 300
-        random_state = 123
+        random_state = 42
         X, y = make_moons(n_samples=n_samples, noise=0.25, random_state=random_state)
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.5, random_state=random_state
@@ -271,4 +271,23 @@ class TestAMFClassifier(object):
         clf.partial_fit(X_train, y_train)
         y_pred = clf.predict_proba(X_test)
         score = roc_auc_score(y_test, y_pred[:, 1])
-        assert score > 0.9
+        # With this random_state, the score should be exactly 0.9709821428571429
+        assert score > 0.97
+
+    def test_random_state_is_consistant(self):
+        n_samples = 300
+        random_state = 42
+        X, y = make_moons(n_samples=n_samples, noise=0.25, random_state=random_state)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.5, random_state=random_state
+        )
+
+        clf = AMFClassifier(n_classes=2, random_state=random_state)
+        clf.partial_fit(X_train, y_train)
+        y_pred_1 = clf.predict_proba(X_test)
+
+        clf = AMFClassifier(n_classes=2, random_state=random_state)
+        clf.partial_fit(X_train, y_train)
+        y_pred_2 = clf.predict_proba(X_test)
+
+        assert y_pred_1 == approx(y_pred_2)

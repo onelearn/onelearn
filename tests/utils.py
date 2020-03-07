@@ -5,6 +5,10 @@ import numpy as np
 import pytest
 
 
+def approx(v, abs=1e-15):
+    return pytest.approx(v, abs)
+
+
 def parameter_test_with_min(
     class_tested,
     parameter,
