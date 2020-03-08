@@ -1,3 +1,6 @@
+# Authors: Stephane Gaiffas <stephane.gaiffas@gmail.com>
+# License: BSD 3 clause
+
 # bokeh serve --show --port=5007 amf_viz.py &
 
 
