@@ -24,7 +24,6 @@ from .utils import sample_discrete
 
 # TODO: an overall task is to minimize the O(#n_features) complexity: pass few
 #  times over the features
-
 # TODO: write all the docstrings
 
 
