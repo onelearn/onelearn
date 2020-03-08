@@ -46,9 +46,8 @@ class AMFClassifierNoPython(object):
         n_jobs,
         verbose,
     ):
-
-        self.n_features = n_features
         self.n_classes = n_classes
+        self.n_features = n_features
         self.n_estimators = n_estimators
         self.step = step
         self.loss = loss
@@ -64,36 +63,42 @@ class AMFClassifierNoPython(object):
 
         # TODO: reflected lists will be replaced by typed list soon...
         trees = [
-            TreeClassifier(n_features, n_classes, samples) for _ in range(n_estimators)
+            TreeClassifier(
+                self.n_classes,
+                self.n_features,
+                self.step,
+                self.loss,
+                self.use_aggregation,
+                self.dirichlet,
+                self.split_pure,
+                self.samples,
+            )
+            for _ in range(n_estimators)
         ]
         self.trees = trees
 
-    # TODO: put it outside as a @njit function
-    def partial_fit(self, X, y):
-        n_samples_batch, n_features = X.shape
-        # We need at least the actual number of nodes + twice the extra samples
 
-        # Let's reserve nodes in advance
-        # print('Reserve nodes in advance')
-        for tree in self.trees:
-            n_nodes_reserved = tree.nodes.n_nodes + 2 * n_samples_batch
-            # print('n_nodes_reserved:', n_nodes_reserved)
-            tree.nodes.reserve_nodes(n_nodes_reserved)
-        # print('Done.')
+@njit(
+    void(AMFClassifierNoPython.class_type.instance_type, float32[:, ::1], float32[::1])
+)
+def partial_fit(forest, X, y):
+    n_samples_batch, n_features = X.shape
+    # We need at least the actual number of nodes + twice the extra samples
 
-        # First, we save the new batch of data
-        # print('Append the new batch of data')
-        n_samples_before = self.samples.n_samples
-        self.samples.append(X, y)
-        # print('Done.')
+    # Let's reserve nodes in advance
+    for tree in forest.trees:
+        n_nodes_reserved = tree.nodes.n_nodes + 2 * n_samples_batch
+        tree.nodes.reserve_nodes(n_nodes_reserved)
 
-        for i in range(n_samples_before, n_samples_before + n_samples_batch):
-            # Then we fit all the trees using all new samples
-            for tree in self.trees:
-                # print('i:', i)
-                tree_partial_fit(tree, i)
+    # First, we save the new batch of data
+    n_samples_before = forest.samples.n_samples
+    forest.samples.append(X, y)
 
-            self.iteration += 1
+    for i in range(n_samples_before, n_samples_before + n_samples_batch):
+        # Then we fit all the trees using all new samples
+        for tree in forest.trees:
+            tree_partial_fit(tree, i)
+        forest.iteration += 1
 
     # def predict(self, X, scores):
     #     scores.fill(0.0)
@@ -306,7 +311,7 @@ class AMFClassifier(object):
                     "n_features=%d in this call" % (self.n_features, n_features)
                 )
         self._set_random_state()
-        self.no_python.partial_fit(X, y)
+        partial_fit(self.no_python, X, y)
         self._put_back_random_state()
         return self
 
