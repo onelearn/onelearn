@@ -246,7 +246,14 @@ def node_compute_split_time(tree, idx_node, idx_sample):
     y_t = tree.samples.labels[idx_sample]
     #  Don't split if the node is pure: all labels are equal to the one of y_t
     # TODO: mais si idx_node est root on renvoie 0 forcement
-    if tree.split_pure and node_is_dirac(tree, idx_node, y_t):
+    if (
+        # If we do not split pure nodes
+        (not tree.split_pure)
+        # If it  contains labels from a single class
+        and node_is_dirac(tree, idx_node, y_t)
+        # And it's not a leaf
+        and (not tree.nodes.is_leaf[idx_node])
+    ):
         return 0
 
     x_t = tree.samples.features[idx_sample]

@@ -346,7 +346,7 @@ class AMFClassifier(object):
         )
 
         n_samples, n_features = X.shape
-        scores = np.empty((n_samples, self.n_classes), dtype="float32")
+        scores = np.zeros((n_samples, self.n_classes), dtype="float32")
         if not self.no_python:
             raise RuntimeError(
                 "You must call `partial_fit` before calling `predict_proba`"
@@ -408,8 +408,8 @@ class AMFClassifier(object):
         memory_range_min = nodes.memory_range_min[:n_nodes]
         memory_range_max = nodes.memory_range_max[:n_nodes]
         n_samples = nodes.n_samples[:n_nodes]
-        # weight = nodes.weight[:n_nodes]
-        # log_weight_tree = nodes.log_weight_tree[:n_nodes]
+        weight = nodes.weight[:n_nodes]
+        log_weight_tree = nodes.log_weight_tree[:n_nodes]
         is_leaf = nodes.is_leaf[:n_nodes]
         # is_memorized = nodes.is_memorized[:n_nodes]
         counts = nodes.counts[:n_nodes]
@@ -425,6 +425,8 @@ class AMFClassifier(object):
             "threshold",
             "time",
             "n_samples",
+            "weight",
+            "log_weight_tree",
             "memory_range_min",
             "memory_range_max",
             "counts",
@@ -441,6 +443,8 @@ class AMFClassifier(object):
             "is_leaf": is_leaf,
             "time": time,
             "n_samples": n_samples,
+            "weight": weight,
+            "log_weight_tree": log_weight_tree,
             "memory_range_min": [tuple(t) for t in memory_range_min],
             "memory_range_max": [tuple(t) for t in memory_range_max],
             "counts": [tuple(t) for t in counts],
