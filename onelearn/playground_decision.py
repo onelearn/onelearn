@@ -1,7 +1,7 @@
 # Authors: Stephane Gaiffas <stephane.gaiffas@gmail.com>
 # License: BSD 3 clause
 
-# streamlit run playground_decision.py
+# streamlit run playground.py
 
 import numpy as np
 import pandas as pd
