@@ -47,7 +47,6 @@ def node_score(tree, node, idx_class):
 
 @njit(float32(TreeClassifier.class_type.instance_type, uint32, uint32))
 def node_loss(tree, node, idx_sample):
-
     c = uint8(tree.samples.labels[idx_sample])
     sc = node_score(tree, node, c)
     # TODO: benchmark different logarithms
@@ -252,7 +251,7 @@ def node_compute_split_time(tree, idx_node, idx_sample):
         # If it  contains labels from a single class
         and node_is_dirac(tree, idx_node, y_t)
         # And it's not a leaf
-        and (not tree.nodes.is_leaf[idx_node])
+        # and (not tree.nodes.is_leaf[idx_node])
     ):
         return 0
 

@@ -16,10 +16,42 @@ It provides mainly the `AMFClassifier` and the `AMFRegressor`, together with a w
 baseline called `OnlineDummyClassifier`. 
 
 
-## Run the experiments from the paper
+Running the experiments requires the installation of scikit-garden, for a comparison
+with Mondrian forests.
+```bash
+git clone https://github.com/scikit-garden/scikit-garden.git && \
+    cd scikit-garden && \
+    python setup.py build install
+```
 
-Once inside the container you can simply run the scripts to reproduce the experiments of the paper. For instance
+
+# Reproducing the experiments from the paper
+
+## Figure 1
+
+The decision function along iterations
+
+```bash
+python plot_iterations.py
+```
+
+## Figure 3
+
+The decision function over some toy datasets
 
 ```bash
 python plot_decisions.py
 ```
+
+## Figure 6
+
+Comparisons of average losses over 10 datasets
+
+## Figure 7
+
+Test AUC
+
+## Figure 8
+
+Sensitivity to the number of trees
+

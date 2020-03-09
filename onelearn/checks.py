@@ -394,7 +394,7 @@ def check_array(
         axis (rows for a 2D array). Setting to 0 disables this check.
     ensure_min_features : int (default=1)
         Make sure that the 2D array has some minimum number of features
-        (columns). The default value of 1 rejects empty datasets.
+        (columns). The default value of 1 rejects empty data.
         This check is only enforced when the input data has effectively 2
         dimensions or is originally 1D and ``ensure_2d`` is True. Setting to 0
         disables this check.
@@ -691,7 +691,7 @@ def check_X_y(
         axis (rows for a 2D array).
     ensure_min_features : int (default=1)
         Make sure that the 2D array has some minimum number of features
-        (columns). The default value of 1 rejects empty datasets.
+        (columns). The default value of 1 rejects empty data.
         This check is only enforced when X has effectively 2 dimensions or
         is originally 1D and ``ensure_2d`` is True. Setting to 0 disables
         this check.
@@ -740,7 +740,19 @@ def check_X_y(
         y = column_or_1d(y, warn=True)
         _assert_all_finite(y)
 
-    if y_numeric and y.dtype.kind in {"O", "i"}:
+    # b	boolean
+    # i	signed integer
+    # u	unsigned integer
+    # f	floating-point
+    # c	complex floating-point
+    # m	timedelta
+    # M	datetime
+    # O	object
+    # S	(byte-)string
+    # U	Unicode
+    # V	void
+    # TODO: improve this
+    if y_numeric and y.dtype.kind in {"O", "i", "b", "u", "U", "S"}:
         y = y.astype("float32")
     elif y.dtype == "float64":
         y = y.astype("float32")

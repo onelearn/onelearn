@@ -52,7 +52,7 @@ amf = AMFClassifier(
     n_estimators=n_estimators,
     random_state=random_state,
     use_aggregation=True,
-    split_pure=False,
+    split_pure=True,
 )
 
 logging.info("Building the graph...")
