@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "onelearn"
-version = "0.1.0"
+version = "0.1.2"
 description = "Machine learning algorithms for online learning"
 authors = ["Stéphane Gaïffas <stephane.gaiffas@gmail.com>"]
 

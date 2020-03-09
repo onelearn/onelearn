@@ -3,8 +3,6 @@
 
 from .dummy import OnlineDummyClassifier
 from .forest import AMFClassifier
+from .playground import run_playground
 
-__all__ = [
-    "OnlineDummyClassifier",
-    "AMFClassifier",
-]
+__all__ = ["OnlineDummyClassifier", "AMFClassifier", "run_playground"]
