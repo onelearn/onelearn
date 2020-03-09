@@ -13,14 +13,15 @@ from onelearn import AMFClassifier
 
 from bokeh.models import ColumnDataSource
 from bokeh.plotting import figure
-from bokeh.palettes import RdBu
+import colorcet as cc
 
 
 n_samples = 100
-grid_size = 100
+grid_size = 200
 random_state = 42
 
-# TODO: at iteration=3 there is a blue region but only red points with aggregation ?!?
+# TODO: at iteration=3 there is a blue region but only red points with
+#  aggregation ?!?
 
 
 st.title("`AMFClassifier` playground")
@@ -134,7 +135,10 @@ source_data = ColumnDataSource(ColumnDataSource.from_df(df_data_current))
 source_decision = ColumnDataSource(data={"image": [zz]})
 
 plot_data = figure(plot_width=600, plot_height=600, x_range=[0, 1], y_range=[0, 1],)
-plot_data.image("image", source=source_decision, x=0, y=0, dw=1, dh=1, palette=RdBu[11])
+plot_data.image(
+    "image", source=source_decision, x=0, y=0, dw=1, dh=1, palette=cc.CET_D1A
+)
+
 
 circles_data = plot_data.circle(
     x="x1",
