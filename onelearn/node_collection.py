@@ -56,7 +56,9 @@ spec_node_collection = [
     ("n_classes", uint32),
     # Number of nodes actually used
     ("n_nodes", uint32),
-    # Number of nodes allocated in memory
+    # For how many samples do we allocate nodes in advance ?
+    ("reserve_samples", uint32),
+    # Number of nodes currently allocated in memory
     ("n_nodes_reserved", uint32),
     ("n_nodes_computed", uint32),
 ]
@@ -64,7 +66,11 @@ spec_node_collection = [
 
 @jitclass(spec_node_collection)
 class NodeCollection(object):
-    def __init__(self, n_features, n_classes, n_nodes_reserved):
+    def __init__(self, n_features, n_classes, reserve_samples):
+        # n_nodes_reserved = tree.nodes.n_nodes + 2 * n_samples_batch
+        # One for root + and twice the number of samples
+        n_nodes_reserved = 2 * reserve_samples + 1
+        self.reserve_samples = reserve_samples
         self.n_features = n_features
         self.n_classes = n_classes
         # TODO: group together arrays of the same type for faster computations
@@ -90,7 +96,9 @@ class NodeCollection(object):
         self.n_nodes = 0
         self.n_nodes_computed = 0
 
-    def reserve_nodes(self, n_nodes_reserved):
+    def reserve_nodes(self):
+        # TODO: or n_nodes_reserved = self.n_nodes_reserved + self.reserve_samples ?
+        n_nodes_reserved = self.n_nodes_reserved + self.reserve_samples
         n_nodes = self.n_nodes
         if n_nodes_reserved > self.n_nodes_reserved:
             self.index = resize_array(self.index, n_nodes, n_nodes_reserved)
@@ -130,9 +138,8 @@ class NodeCollection(object):
         output : `int` index of the added node
         """
         if self.n_nodes >= self.n_nodes_reserved:
-            raise RuntimeError("self.n_nodes >= self.n_nodes_reserved")
-        if self.n_nodes >= self.index.shape[0]:
-            raise RuntimeError("self.n_nodes >= self.index.shape[0]")
+            # We don't have memory for this extra node, so let's create some
+            self.reserve_nodes()
 
         node_index = self.n_nodes
         self.index[node_index] = node_index

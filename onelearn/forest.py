@@ -21,6 +21,7 @@ spec = [
     ("dirichlet", float32),
     ("split_pure", boolean),
     ("n_jobs", uint32),
+    ("reserve_samples", uint32),
     ("verbose", boolean),
     ("trees", types.List(TreeClassifier.class_type.instance_type, reflected=True)),
     ("samples", SamplesCollection.class_type.instance_type),
@@ -44,6 +45,7 @@ class AMFClassifierNoPython(object):
         dirichlet,
         split_pure,
         n_jobs,
+        reserve_samples,
         verbose,
     ):
         self.n_classes = n_classes
@@ -55,10 +57,11 @@ class AMFClassifierNoPython(object):
         self.dirichlet = dirichlet
         self.split_pure = split_pure
         self.n_jobs = n_jobs
+        self.reserve_samples = reserve_samples
         self.verbose = verbose
         self.iteration = 0
 
-        samples = SamplesCollection()
+        samples = SamplesCollection(self.reserve_samples)
         self.samples = samples
 
         # TODO: reflected lists will be replaced by typed list soon...
@@ -86,9 +89,9 @@ def partial_fit(forest, X, y):
     # We need at least the actual number of nodes + twice the extra samples
 
     # Let's reserve nodes in advance
-    for tree in forest.trees:
-        n_nodes_reserved = tree.nodes.n_nodes + 2 * n_samples_batch
-        tree.nodes.reserve_nodes(n_nodes_reserved)
+    # for tree in forest.trees:
+    #     n_nodes_reserved = tree.nodes.n_nodes + 2 * n_samples_batch
+    #     tree.nodes.reserve_nodes(n_nodes_reserved)
 
     # First, we save the new batch of data
     n_samples_before = forest.samples.n_samples
@@ -189,6 +192,10 @@ class AMFClassifier(object):
         The number of threads used to grow the tree in parallel. This has no
         effect for now, the default is n_jobs=1, namely single-threaded.
 
+    reserve_samples : `int`, optional (default=1024)
+        Each time extra memory is required for new samples and new nodes, pre-allocate
+        what is required for `reserve_samples` in advance.
+
     random_state : `int` or `None`, optional (default=None)
         Controls the randomness involved in the trees growing, which is a highly
         randomized process.
@@ -227,6 +234,7 @@ class AMFClassifier(object):
         dirichlet=None,
         split_pure=False,
         n_jobs=1,
+        reserve_samples=1024,
         random_state=None,
         verbose: bool = True,
     ):
@@ -252,6 +260,7 @@ class AMFClassifier(object):
 
         self.split_pure = split_pure
         self.n_jobs = n_jobs
+        self.reserve_samples = reserve_samples
 
         # TODO: deal with random_state
         self.random_state = random_state
@@ -301,6 +310,7 @@ class AMFClassifier(object):
                 self.dirichlet,
                 self.split_pure,
                 self.n_jobs,
+                self.reserve_samples,
                 self.verbose,
             )
         else:
@@ -511,6 +521,24 @@ class AMFClassifier(object):
                 raise ValueError("`n_jobs` must be >= 1")
             else:
                 self._n_jobs = val
+
+    @property
+    def reserve_samples(self):
+        return self._reserve_samples
+
+    @reserve_samples.setter
+    def reserve_samples(self, val):
+        if self.no_python:
+            raise ValueError(
+                "You cannot modify `reserve_samples` after calling `partial_fit`"
+            )
+        else:
+            if not isinstance(val, int):
+                raise ValueError("`reserve_samples` must be of type `int`")
+            elif val < 1:
+                raise ValueError("`reserve_samples` must be >= 1")
+            else:
+                self._reserve_samples = val
 
     @property
     def step(self):

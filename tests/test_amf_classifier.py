@@ -166,6 +166,19 @@ class TestAMFClassifier(object):
             fixed_type=int,
         )
 
+    def test_reserve_samples(self):
+        parameter_test_with_min(
+            AMFClassifier,
+            parameter="reserve_samples",
+            valid_val=128,
+            invalid_type_val=2.0,
+            invalid_val=0,
+            min_value=1,
+            min_value_str="1",
+            mandatory=False,
+            fixed_type=int,
+        )
+
     def test_verbose(self):
         parameter_test_with_type(
             AMFClassifier,
