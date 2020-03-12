@@ -42,6 +42,33 @@ amf.partial_fit(X_train[:5], y_train[:5])
 
 amf.predict_proba(X_test[:5])
 
+# print("Test for batch training")
+# repeats = 5
+# for repeat in range(1, repeats + 1):
+#     print("-" * 16)
+#     amf = AMFClassifier(
+#         n_classes=n_classes,
+#         random_state=1234,
+#         use_aggregation=True,
+#         n_estimators=20,
+#         split_pure=True,
+#         dirichlet=0.5,
+#         step=1.0,
+#     )
+#     t1 = time()
+#     amf.partial_fit(X_train, y_train)
+#     t2 = time()
+#     print("time fit % d:" % repeat, t2 - t1, "seconds")
+#
+#     t1 = time()
+#     y_pred = amf.predict_proba(X_test)
+#     t2 = time()
+#     print("time predict %d:" % repeat, t2 - t1, "seconds")
+#     roc_auc = roc_auc_score(y_test, y_pred[:, 1])
+#     print("ROC AUC: %.2f" % roc_auc)
+
+
+print("Test for online training")
 repeats = 5
 for repeat in range(1, repeats + 1):
     print("-" * 16)
@@ -55,7 +82,8 @@ for repeat in range(1, repeats + 1):
         step=1.0,
     )
     t1 = time()
-    amf.partial_fit(X_train, y_train)
+    for i in range(X_train.shape[0]):
+        amf.partial_fit(X_train[i].reshape(1, n_features), np.array([y_train[i]]))
     t2 = time()
     print("time fit % d:" % repeat, t2 - t1, "seconds")
 

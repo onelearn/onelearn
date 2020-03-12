@@ -8,6 +8,7 @@ from numba.types import float32, uint32
 spec_samples_collection = [
     ("features", float32[:, ::1]),
     ("labels", float32[::1]),
+    ("reserve_samples", uint32),
     ("n_samples", uint32),
 ]
 
@@ -20,7 +21,8 @@ spec_samples_collection = [
 
 @jitclass(spec_samples_collection)
 class SamplesCollection(object):
-    def __init__(self):
+    def __init__(self, reserve_samples):
+        self.reserve_samples = reserve_samples
         self.n_samples = 0
 
     def append(self, X, y):
