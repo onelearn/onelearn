@@ -153,6 +153,7 @@ def tree_predict(tree, x_t, scores, use_aggregation):
         node_predict(tree, leaf, scores)
         return
     current = leaf
+    # Allocate once and for all
     pred_new = np.empty(tree.n_classes, float32)
     while True:
         if tree.nodes.is_leaf[current]:

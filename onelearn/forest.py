@@ -130,6 +130,7 @@ def partial_fit(forest, X, y):
     )
 )
 def predict_proba(forest, X, scores):
+    # TODO: use predict_proba_tree from below ? Or put it in the tree ?
     scores.fill(0.0)
     n_samples_batch, _ = X.shape
 
@@ -146,6 +147,22 @@ def predict_proba(forest, X, scores):
             scores_i += scores_tree
         scores_i /= forest.n_estimators
         # print('scores_i:', scores_i)
+
+
+@njit(
+    float32[:, ::1](
+        AMFClassifierNoPython.class_type.instance_type, uint32, float32[:, ::1]
+    )
+)
+def predict_proba_tree(forest, idx_tree, X):
+    n_samples_batch, _ = X.shape
+    scores = np.empty((n_samples_batch, forest.n_classes), dtype=float32)
+    tree = forest.trees[idx_tree]
+    for i in range(n_samples_batch):
+        scores_i = scores[i]
+        x_i = X[i]
+        tree_predict(tree, x_i, scores_i, forest.use_aggregation)
+    return scores
 
 
 class AMFClassifier(object):
@@ -371,6 +388,59 @@ class AMFClassifier(object):
         predict_proba(self.no_python, X, scores)
         self._put_back_random_state()
         return scores
+
+    def predict_proba_tree(self, X, tree):
+        """Predict class for given samples using a single tree. Mainly useful  for
+        debugging or visualisation purposes
+
+        Parameters
+        ----------
+        X : `np.ndarray`, shape=(n_samples, n_features)
+            Features matrix to predict for
+
+        tree : `int`
+            Number of the tree, must be between 0 and `n_estimators` - 1
+
+        Returns
+        -------
+        output : `np.ndarray`, shape=(n_samples, n_classes)
+            Returns the predicted class probabilities
+        """
+        # TODO: unittests for this method
+        if not self.no_python:
+            raise RuntimeError(
+                "You must call `partial_fit` before calling `predict_proba`"
+            )
+        else:
+            X = check_array(
+                X,
+                accept_sparse=False,
+                accept_large_sparse=False,
+                dtype=["float32"],
+                order="C",
+                copy=False,
+                force_all_finite=True,
+                ensure_2d=True,
+                allow_nd=False,
+                ensure_min_samples=1,
+                ensure_min_features=1,
+                estimator="AMFClassifier",
+            )
+            n_samples, n_features = X.shape
+            if n_features != self.n_features:
+                raise ValueError(
+                    "`partial_fit` was called with n_features=%d while `predict_proba` "
+                    "received n_features=%d" % (self.n_features, n_features)
+                )
+            if not isinstance(tree, int):
+                raise ValueError("`tree` must be of integer type")
+            if tree < 0 or tree >= self.n_estimators:
+                raise ValueError("`tree` must be between 0 and `n_estimators` - 1")
+
+            self._set_random_state()
+            scores = predict_proba_tree(self.no_python, tree, X)
+            self._put_back_random_state()
+            return scores
 
     # def predict(self, X):
     #     if not self._fitted:
