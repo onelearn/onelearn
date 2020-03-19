@@ -165,7 +165,7 @@ def node_update_weight_tree(tree, idx_node):
         right = tree.nodes.right[idx_node]
         weight = tree.nodes.weight[idx_node]
         log_weight_tree = tree.nodes.log_weight_tree
-        tree.nodes.weight[idx_node] = log_sum_2_exp(
+        log_weight_tree[idx_node] = log_sum_2_exp(
             weight, log_weight_tree[left] + log_weight_tree[right]
         )
 
