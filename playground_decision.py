@@ -41,16 +41,18 @@ dataset = st.sidebar.selectbox(
     "dataset", ["moons", "circles", "linear", "blobs"], index=0
 )
 show_data = st.sidebar.checkbox("Show data", value=True)
-normalize = st.sidebar.checkbox("Normalize colors", value=False)
+normalize = st.sidebar.checkbox("Normalize colors", value=True)
 
 st.sidebar.title("Parameters")
 st.sidebar.markdown("Hyperparameters of the AMFClassifier")
-use_aggregation = st.sidebar.checkbox("use_aggregation", value=True)
-split_pure = st.sidebar.checkbox("split_pure", value=False)
-n_estimators = st.sidebar.selectbox("n_estimators", [1, 5, 10, 50, 200, 500], index=2)
+use_aggregation = st.sidebar.checkbox("Use aggregation", value=True)
+split_pure = st.sidebar.checkbox("Split pure cells", value=True)
+n_estimators = st.sidebar.selectbox(
+    "Number of trees", [1, 5, 10, 50, 200, 500], index=2
+)
 step = st.sidebar.selectbox("step", [0.01, 0.1, 0.5, 1.0, 5.0, 100.0, 1000.0], index=3)
 dirichlet = st.sidebar.selectbox(
-    "dirichlet", [1e-7, 0.001, 0.01, 0.05, 0.1, 0.5, 1.0, 5.0, 50.0, 1000.0], index=4
+    "dirichlet", [1e-7, 0.001, 0.01, 0.05, 0.1, 0.5, 1.0, 5.0, 50.0, 1000.0], index=5
 )
 
 if normalize:
@@ -94,7 +96,8 @@ def simulate_data(dataset="moons"):
 X, y = simulate_data(dataset)
 n_classes = int(y.max() + 1)
 n_samples_train = X.shape[0]
-show_iterations = st.sidebar.checkbox("show_iterations", value=False)
+st.sidebar.markdown("Show the iterations instead of the final decision function")
+show_iterations = st.sidebar.checkbox("Show iterations", value=False)
 
 
 @st.cache
