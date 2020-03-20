@@ -21,9 +21,6 @@ grid_size = 200
 random_state = 42
 n_estimators = 1
 
-# TODO: at iteration=3 there is a blue region but only red points with
-#  aggregation ?!?
-
 
 st.title("`AMFClassifier` playground")
 
@@ -37,7 +34,7 @@ st.sidebar.markdown(
 hyperparameters of the AMFClassifier"""
 )
 use_aggregation = st.sidebar.checkbox("use_aggregation", value=True)
-split_pure = st.sidebar.checkbox("split_pure", value=False)
+split_pure = st.sidebar.checkbox("split_pure", value=True)
 step = st.sidebar.selectbox("step", [1.0, 0.1, 2.0, 3.0], index=0)
 dirichlet = st.sidebar.selectbox(
     "dirichlet", [1e-8, 0.01, 0.05, 0.1, 0.5, 1.0, 2.0], index=3
