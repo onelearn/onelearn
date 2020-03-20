@@ -285,7 +285,7 @@ class AMFClassifier(object):
 
         self._classes = set(range(n_classes))
 
-    def partial_fit(self, X, y):
+    def partial_fit(self, X, y, classes=None):
         # TODO: write the docstring
         # First,ensure that X and y are C-contiguous and with float32 dtype
         X, y = check_X_y(

@@ -72,7 +72,7 @@ def plot_decision_classification(classifiers, datasets, h, levels):
 n_samples = 300
 n_features = 2
 n_classes = 2
-random_state = 42
+random_state = 12
 
 X, y = make_classification(
     n_samples=n_samples,
@@ -81,14 +81,16 @@ X, y = make_classification(
     n_informative=2,
     random_state=random_state,
     n_clusters_per_class=1,
+    flip_y=0.001,
+    class_sep=2.0,
 )
 rng = np.random.RandomState(random_state)
 X += 2 * rng.uniform(size=X.shape)
 linearly_separable = (X, y)
 
 datasets = [
-    make_moons(n_samples=n_samples, noise=0.3, random_state=0),
-    make_circles(n_samples=n_samples, noise=0.2, factor=0.5, random_state=random_state),
+    make_moons(n_samples=n_samples, noise=0.2, random_state=random_state),
+    make_circles(n_samples=n_samples, noise=0.1, factor=0.5, random_state=random_state),
     linearly_separable,
 ]
 
@@ -102,7 +104,7 @@ classifiers = [
             n_estimators=n_estimators,
             random_state=random_state,
             use_aggregation=True,
-            split_pure=False,
+            split_pure=True,
         ),
     ),
     (
@@ -121,7 +123,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 )
 
 h = 0.02
-levels = 30
+levels = 20
 plot_decision_classification(classifiers, datasets, h, levels)
 
 

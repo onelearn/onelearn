@@ -42,7 +42,7 @@ class OnlineDummyClassifier(object):
             self.dirichlet = dirichlet
         self.counts = np.zeros((n_classes,), dtype=np.uint32)
 
-    def partial_fit(self, _, y):
+    def partial_fit(self, _, y, classes=None):
         if y.min() < 0:
             raise ValueError("All the values in `y` must be non-negative")
         y_max = y.max()

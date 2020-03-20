@@ -44,7 +44,7 @@ clf = AMFClassifier(
     n_classes=n_classes,
     n_estimators=10,
     random_state=random_state,
-    split_pure=False,
+    split_pure=True,
     use_aggregation=True,
 )
 
