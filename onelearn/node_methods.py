@@ -1,11 +1,11 @@
 # Authors: Stephane Gaiffas <stephane.gaiffas@gmail.com>
 # License: BSD 3 clause
-
 from math import log
 from numpy.random import exponential
 from numba import njit
 from numba import types
 from .types import float32, boolean, uint32, uint8, void, Tuple
+from .node_collection import add_node, copy_node
 from .tree import TreeClassifier
 from .utils import log_sum_2_exp, get_type
 
@@ -37,8 +37,9 @@ def node_score(tree, node, idx_class):
     -----
     This uses Jeffreys prior with dirichlet parameter for smoothing
     """
-    count = tree.nodes.counts[node, idx_class]
-    n_samples = tree.nodes.n_samples[node]
+    nodes = tree.nodes
+    count = nodes.counts[node, idx_class]
+    n_samples = nodes.n_samples[node]
     n_classes = tree.n_classes
     dirichlet = tree.dirichlet
     # We use the Jeffreys prior with dirichlet parameter
@@ -68,75 +69,23 @@ def node_update_count(tree, idx_node, idx_sample):
     tree.nodes.counts[idx_node, c] += 1
 
 
-@njit
-def node_print(tree, idx_node):
-    print("----------------")
-    print(
-        "index:",
-        tree.nodes.index[idx_node],
-        "depth:",
-        tree.nodes.depth[idx_node],
-        "parent:",
-        tree.nodes.parent[idx_node],
-        "left:",
-        tree.nodes.left[idx_node],
-        "right:",
-        tree.nodes.right[idx_node],
-        "is_leaf:",
-        tree.nodes.is_leaf[idx_node],
-        "time:",
-        tree.nodes.time[idx_node],
-    )
-
-    print(
-        "feature:",
-        tree.nodes.feature[idx_node],
-        "threshold:",
-        tree.nodes.threshold[idx_node],
-        "weight:",
-        tree.nodes.weight[idx_node],
-        "log_tree_weight:",
-        tree.nodes.log_weight_tree[idx_node],
-    )
-
-    print(
-        "n_samples:",
-        tree.nodes.n_samples[idx_node],
-        "counts: [",
-        tree.nodes.counts[idx_node, 0],
-        ",",
-        tree.nodes.counts[idx_node, 1],
-        "]",
-        "memorized:",
-        tree.nodes.memorized[idx_node],
-        "memory_range_min: [",
-        tree.nodes.memory_range_min[idx_node, 0],
-        ",",
-        tree.nodes.memory_range_min[idx_node, 1],
-        "]",
-        "memory_range_max: [",
-        tree.nodes.memory_range_max[idx_node, 0],
-        ",",
-        tree.nodes.memory_range_max[idx_node, 1],
-        "]",
-    )
-
-
 @njit(void(get_type(TreeClassifier), uint32, uint32, boolean))
 def node_update_downwards(tree, idx_node, idx_sample, do_update_weight):
     x_t = tree.samples.features[idx_sample]
-    memory_range_min = tree.nodes.memory_range_min[idx_node]
-    memory_range_max = tree.nodes.memory_range_max[idx_node]
+    nodes = tree.nodes
+    n_features = tree.n_features
+    memory_range_min = nodes.memory_range_min[idx_node]
+    memory_range_max = nodes.memory_range_max[idx_node]
     # If it is the first sample, we copy the features vector into the min and
     # max range
-    if tree.nodes.n_samples[idx_node] == 0:
-        for j in range(tree.n_features):
+    if nodes.n_samples[idx_node] == 0:
+        for j in range(n_features):
             x_tj = x_t[j]
             memory_range_min[j] = x_tj
             memory_range_max[j] = x_tj
     # Otherwise, we update the range
     else:
-        for j in range(tree.n_features):
+        for j in range(n_features):
             x_tj = x_t[j]
             if x_tj < memory_range_min[j]:
                 memory_range_min[j] = x_tj
@@ -146,7 +95,7 @@ def node_update_downwards(tree, idx_node, idx_sample, do_update_weight):
     # TODO: we should save the sample here and do a bunch of stuff about
     #  memorization
     # One more sample in the node
-    tree.nodes.n_samples[idx_node] += 1
+    nodes.n_samples[idx_node] += 1
 
     if do_update_weight:
         # TODO: Using x_t and y_t should be better...
@@ -157,13 +106,14 @@ def node_update_downwards(tree, idx_node, idx_sample, do_update_weight):
 
 @njit(void(get_type(TreeClassifier), uint32))
 def node_update_weight_tree(tree, idx_node):
-    if tree.nodes.is_leaf[idx_node]:
-        tree.nodes.log_weight_tree[idx_node] = tree.nodes.weight[idx_node]
+    nodes = tree.nodes
+    if nodes.is_leaf[idx_node]:
+        nodes.log_weight_tree[idx_node] = nodes.weight[idx_node]
     else:
-        left = tree.nodes.left[idx_node]
-        right = tree.nodes.right[idx_node]
-        weight = tree.nodes.weight[idx_node]
-        log_weight_tree = tree.nodes.log_weight_tree
+        left = nodes.left[idx_node]
+        right = nodes.right[idx_node]
+        weight = nodes.weight[idx_node]
+        log_weight_tree = nodes.log_weight_tree
         log_weight_tree[idx_node] = log_sum_2_exp(
             weight, log_weight_tree[left] + log_weight_tree[right]
         )
@@ -172,12 +122,13 @@ def node_update_weight_tree(tree, idx_node):
 @njit(void(get_type(TreeClassifier), uint32, uint8))
 def node_update_depth(tree, idx_node, depth):
     depth += 1
-    tree.nodes.depth[idx_node] = depth
-    if tree.nodes.is_leaf[idx_node]:
+    nodes = tree.nodes
+    nodes.depth[idx_node] = depth
+    if nodes.is_leaf[idx_node]:
         return
     else:
-        left = tree.nodes.left[idx_node]
-        right = tree.nodes.right[idx_node]
+        left = nodes.left[idx_node]
+        right = nodes.right[idx_node]
         node_update_depth(tree, left, depth)
         node_update_depth(tree, right, depth)
 
@@ -185,31 +136,31 @@ def node_update_depth(tree, idx_node, depth):
 @njit(boolean(get_type(TreeClassifier), uint32, float32))
 def node_is_dirac(tree, idx_node, y_t):
     c = types.uint8(y_t)
-    n_samples = tree.nodes.n_samples[idx_node]
-    count = tree.nodes.counts[idx_node, c]
+    nodes = tree.nodes
+    n_samples = nodes.n_samples[idx_node]
+    count = nodes.counts[idx_node, c]
     return n_samples == count
 
 
 @njit(uint32(get_type(TreeClassifier), uint32, float32[::1]))
 def node_get_child(tree, idx_node, x_t):
-    feature = tree.nodes.feature[idx_node]
-    threshold = tree.nodes.threshold[idx_node]
+    nodes = tree.nodes
+    feature = nodes.feature[idx_node]
+    threshold = nodes.threshold[idx_node]
     if x_t[feature] <= threshold:
-        return tree.nodes.left[idx_node]
+        return nodes.left[idx_node]
     else:
-        return tree.nodes.right[idx_node]
+        return nodes.right[idx_node]
 
 
 @njit(Tuple((float32, float32))(get_type(TreeClassifier), uint32, uint32))
 def node_range(tree, idx_node, j):
     # TODO: do the version without memory...
-    if tree.nodes.n_samples[idx_node] == 0:
-        raise RuntimeError("Node has no range since it has no samples")
-    else:
-        return (
-            tree.nodes.memory_range_min[idx_node, j],
-            tree.nodes.memory_range_max[idx_node, j],
-        )
+    nodes = tree.nodes
+    return (
+        nodes.memory_range_min[idx_node, j],
+        nodes.memory_range_max[idx_node, j],
+    )
 
 
 @njit(float32(get_type(TreeClassifier), uint32, float32[::1], float32[::1]))
@@ -238,40 +189,30 @@ def node_predict(tree, idx_node, scores):
 
 @njit(float32(get_type(TreeClassifier), uint32, uint32))
 def node_compute_split_time(tree, idx_node, idx_sample):
-    y_t = tree.samples.labels[idx_sample]
+    samples = tree.samples
+    nodes = tree.nodes
+    y_t = samples.labels[idx_sample]
     #  Don't split if the node is pure: all labels are equal to the one of y_t
-    # TODO: mais si idx_node est root on renvoie 0 forcement
-    if (
-        # If we do not split pure nodes
-        (not tree.split_pure)
-        # If it  contains labels from a single class
-        and node_is_dirac(tree, idx_node, y_t)
-        # And it's not a leaf
-        # and (not tree.nodes.is_leaf[idx_node])
-    ):
-        return 0
+    if not tree.split_pure and node_is_dirac(tree, idx_node, y_t):
+        return 0.0
 
-    x_t = tree.samples.features[idx_sample]
+    x_t = samples.features[idx_sample]
     extensions_sum = node_compute_range_extension(tree, idx_node, x_t, tree.intensities)
-
     # If x_t extends the current range of the node
     if extensions_sum > 0:
         # Sample an exponential with intensity = extensions_sum
         T = exponential(1 / extensions_sum)
-        time = tree.nodes.time[idx_node]
+        time = nodes.time[idx_node]
         # Splitting time of the node (if splitting occurs)
         split_time = time + T
         # If the node is a leaf we must split it
-        if tree.nodes.is_leaf[idx_node]:
-            # print("if tree.nodes.is_leaf[idx_node]:")
+        if nodes.is_leaf[idx_node]:
             return split_time
         # Otherwise we apply Mondrian process dark magic :)
-        # 1. We get the creation time of the childs (left and right is the
-        #    same)
-        left = tree.nodes.left[idx_node]
-        child_time = tree.nodes.time[left]
+        # 1. We get the creation time of the childs (left and right is the same)
+        left = nodes.left[idx_node]
+        child_time = nodes.time[left]
         # 2. We check if splitting time occurs before child creation time
-        # print("split_time < child_time:", split_time, "<", child_time)
         if split_time < child_time:
             return split_time
 
@@ -281,39 +222,40 @@ def node_compute_split_time(tree, idx_node, idx_sample):
 @njit(void(get_type(TreeClassifier), uint32, float32, float32, uint32, boolean,))
 def node_split(tree, idx_node, split_time, threshold, feature, is_right_extension):
     # Create the two splits
-    left_new = tree.nodes.add_node(idx_node, split_time)
-    right_new = tree.nodes.add_node(idx_node, split_time)
+    nodes = tree.nodes
+    left_new = add_node(nodes, idx_node, split_time)
+    right_new = add_node(nodes, idx_node, split_time)
     if is_right_extension:
-        # left_new is the same as idx_node, excepted for the parent, time
-        # and the fact that it's a leaf
-        tree.nodes.copy_node(idx_node, left_new)
+        # left_new is the same as idx_node, excepted for the parent, time and the
+        #  fact that it's a leaf
+        copy_node(nodes, idx_node, left_new)
         # so we need to put back the correct parent and time
-        tree.nodes.parent[left_new] = idx_node
-        tree.nodes.time[left_new] = split_time
+        nodes.parent[left_new] = idx_node
+        nodes.time[left_new] = split_time
         # right_new must have idx_node has parent
-        tree.nodes.parent[right_new] = idx_node
-        tree.nodes.time[right_new] = split_time
+        nodes.parent[right_new] = idx_node
+        nodes.time[right_new] = split_time
         # We must tell the old childs that they have a new parent, if the
         # current node is not a leaf
-        if not tree.nodes.is_leaf[idx_node]:
-            left = tree.nodes.left[idx_node]
-            right = tree.nodes.right[idx_node]
-            tree.nodes.parent[left] = left_new
-            tree.nodes.parent[right] = left_new
+        if not nodes.is_leaf[idx_node]:
+            left = nodes.left[idx_node]
+            right = nodes.right[idx_node]
+            nodes.parent[left] = left_new
+            nodes.parent[right] = left_new
     else:
-        tree.nodes.copy_node(idx_node, right_new)
-        tree.nodes.parent[right_new] = idx_node
-        tree.nodes.time[right_new] = split_time
-        tree.nodes.parent[left_new] = idx_node
-        tree.nodes.time[left_new] = split_time
-        if not tree.nodes.is_leaf[idx_node]:
-            left = tree.nodes.left[idx_node]
-            right = tree.nodes.right[idx_node]
-            tree.nodes.parent[left] = right_new
-            tree.nodes.parent[right] = right_new
+        copy_node(nodes, idx_node, right_new)
+        nodes.parent[right_new] = idx_node
+        nodes.time[right_new] = split_time
+        nodes.parent[left_new] = idx_node
+        nodes.time[left_new] = split_time
+        if not nodes.is_leaf[idx_node]:
+            left = nodes.left[idx_node]
+            right = nodes.right[idx_node]
+            nodes.parent[left] = right_new
+            nodes.parent[right] = right_new
 
-    tree.nodes.feature[idx_node] = feature
-    tree.nodes.threshold[idx_node] = threshold
-    tree.nodes.left[idx_node] = left_new
-    tree.nodes.right[idx_node] = right_new
-    tree.nodes.is_leaf[idx_node] = False
+    nodes.feature[idx_node] = feature
+    nodes.threshold[idx_node] = threshold
+    nodes.left[idx_node] = left_new
+    nodes.right[idx_node] = right_new
+    nodes.is_leaf[idx_node] = False

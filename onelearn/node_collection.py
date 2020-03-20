@@ -1,13 +1,11 @@
 # Authors: Stephane Gaiffas <stephane.gaiffas@gmail.com>
 # License: BSD 3 clause
 import numpy as np
-from numba import jitclass
-from .types import float32, boolean, uint32, uint8, get_array_2d_type
+from numba import jitclass, njit
+from .types import void, float32, boolean, uint32, uint8, get_array_2d_type
+from .utils import resize_array, get_type
 
-from .utils import resize_array
 
-
-# TODO: declare methods are njitted functions
 # TODO: write the docstrings
 
 spec_node_collection = [
@@ -66,7 +64,6 @@ spec_node_collection = [
 @jitclass(spec_node_collection)
 class NodeCollection(object):
     def __init__(self, n_features, n_classes, reserve_samples):
-        # n_nodes_reserved = tree.nodes.n_nodes + 2 * n_samples_batch
         # One for root + and twice the number of samples
         n_nodes_reserved = 2 * reserve_samples + 1
         self.reserve_samples = reserve_samples
@@ -95,83 +92,114 @@ class NodeCollection(object):
         self.n_nodes = 0
         self.n_nodes_computed = 0
 
-    def reserve_nodes(self):
-        # TODO: or n_nodes_reserved = self.n_nodes_reserved + self.reserve_samples ?
-        n_nodes_reserved = self.n_nodes_reserved + self.reserve_samples
-        n_nodes = self.n_nodes
-        if n_nodes_reserved > self.n_nodes_reserved:
-            self.index = resize_array(self.index, n_nodes, n_nodes_reserved)
-            # By default, a node is a leaf when newly created
-            self.is_leaf = resize_array(self.is_leaf, n_nodes, n_nodes_reserved, True)
-            self.depth = resize_array(self.depth, n_nodes, n_nodes_reserved)
-            self.n_samples = resize_array(self.n_samples, n_nodes, n_nodes_reserved)
-            self.parent = resize_array(self.parent, n_nodes, n_nodes_reserved)
-            self.left = resize_array(self.left, n_nodes, n_nodes_reserved)
-            self.right = resize_array(self.right, n_nodes, n_nodes_reserved)
-            self.feature = resize_array(self.feature, n_nodes, n_nodes_reserved)
-            self.y_t = resize_array(self.y_t, n_nodes, n_nodes_reserved)
-            self.weight = resize_array(self.weight, n_nodes, n_nodes_reserved)
-            self.log_weight_tree = resize_array(
-                self.log_weight_tree, n_nodes, n_nodes_reserved
-            )
-            self.threshold = resize_array(self.threshold, n_nodes, n_nodes_reserved)
-            self.time = resize_array(self.time, n_nodes, n_nodes_reserved)
-            self.counts = resize_array(self.counts, n_nodes, n_nodes_reserved)
-            self.memorized = resize_array(self.memorized, n_nodes, n_nodes_reserved)
-            self.memory_range_min = resize_array(
-                self.memory_range_min, n_nodes, n_nodes_reserved
-            )
-            self.memory_range_max = resize_array(
-                self.memory_range_max, n_nodes, n_nodes_reserved
-            )
 
-        self.n_nodes_reserved = n_nodes_reserved
+@njit(void(get_type(NodeCollection)))
+def reserve_nodes(node_collection):
+    n_nodes_reserved = (
+        node_collection.n_nodes_reserved + node_collection.reserve_samples
+    )
+    n_nodes = node_collection.n_nodes
+    if n_nodes_reserved > node_collection.n_nodes_reserved:
+        node_collection.index = resize_array(
+            node_collection.index, n_nodes, n_nodes_reserved
+        )
+        # By default, a node is a leaf when newly created
+        node_collection.is_leaf = resize_array(
+            node_collection.is_leaf, n_nodes, n_nodes_reserved, True
+        )
+        node_collection.depth = resize_array(
+            node_collection.depth, n_nodes, n_nodes_reserved
+        )
+        node_collection.n_samples = resize_array(
+            node_collection.n_samples, n_nodes, n_nodes_reserved
+        )
+        node_collection.parent = resize_array(
+            node_collection.parent, n_nodes, n_nodes_reserved
+        )
+        node_collection.left = resize_array(
+            node_collection.left, n_nodes, n_nodes_reserved
+        )
+        node_collection.right = resize_array(
+            node_collection.right, n_nodes, n_nodes_reserved
+        )
+        node_collection.feature = resize_array(
+            node_collection.feature, n_nodes, n_nodes_reserved
+        )
+        node_collection.y_t = resize_array(
+            node_collection.y_t, n_nodes, n_nodes_reserved
+        )
+        node_collection.weight = resize_array(
+            node_collection.weight, n_nodes, n_nodes_reserved
+        )
+        node_collection.log_weight_tree = resize_array(
+            node_collection.log_weight_tree, n_nodes, n_nodes_reserved
+        )
+        node_collection.threshold = resize_array(
+            node_collection.threshold, n_nodes, n_nodes_reserved
+        )
+        node_collection.time = resize_array(
+            node_collection.time, n_nodes, n_nodes_reserved
+        )
+        node_collection.counts = resize_array(
+            node_collection.counts, n_nodes, n_nodes_reserved
+        )
+        node_collection.memorized = resize_array(
+            node_collection.memorized, n_nodes, n_nodes_reserved
+        )
+        node_collection.memory_range_min = resize_array(
+            node_collection.memory_range_min, n_nodes, n_nodes_reserved
+        )
+        node_collection.memory_range_max = resize_array(
+            node_collection.memory_range_max, n_nodes, n_nodes_reserved
+        )
 
-    def add_node(self, parent, time):
-        """
-        Add a node with specified parent and creation time. The other fields
-        will be provided later on
+    node_collection.n_nodes_reserved = n_nodes_reserved
 
-        Returns
-        -------
-        output : `int` index of the added node
-        """
-        if self.n_nodes >= self.n_nodes_reserved:
-            # We don't have memory for this extra node, so let's create some
-            self.reserve_nodes()
 
-        node_index = self.n_nodes
-        self.index[node_index] = node_index
-        self.parent[node_index] = parent
-        self.time[node_index] = time
-        self.n_nodes += 1
-        # This is a new node, so it's necessary computed for now
-        self.n_nodes_computed += 1
-        return self.n_nodes - 1
+@njit(uint32(get_type(NodeCollection), uint32, float32))
+def add_node(node_collection, parent, time):
+    """
+    Add a node with specified parent and creation time. The other fields
+    will be provided later on
 
-    def copy_node(self, first, second):
-        # We must NOT copy the index
-        self.is_leaf[second] = self.is_leaf[first]
-        self.depth[second] = self.depth[first]
-        self.n_samples[second] = self.n_samples[first]
-        self.parent[second] = self.parent[first]
-        self.left[second] = self.left[first]
-        self.right[second] = self.right[first]
-        self.feature[second] = self.feature[first]
-        self.y_t[second] = self.y_t[first]
-        self.weight[second] = self.weight[first]
-        self.log_weight_tree[second] = self.log_weight_tree[first]
-        self.threshold[second] = self.threshold[first]
-        self.time[second] = self.time[first]
-        self.counts[second, :] = self.counts[first, :]
-        self.memorized[second] = self.memorized[first]
-        self.memory_range_min[second, :] = self.memory_range_min[first, :]
-        self.memory_range_max[second, :] = self.memory_range_max[first, :]
+    Returns
+    -------
+    output : `int` index of the added node
+    """
+    if node_collection.n_nodes >= node_collection.n_nodes_reserved:
+        # We don't have memory for this extra node, so let's create some
+        reserve_nodes(node_collection)
 
-    def print(self):
-        n_nodes = self.n_nodes
-        n_nodes_reserved = self.n_nodes_reserved
-        print("n_nodes_reserved:", n_nodes_reserved, " n_nodes: ", n_nodes)
-        print("index: ", self.index[:n_nodes])
-        print("parent: ", self.parent[:n_nodes])
-        print("time: ", self.time[:n_nodes])
+    node_index = node_collection.n_nodes
+    node_collection.index[node_index] = node_index
+    node_collection.parent[node_index] = parent
+    node_collection.time[node_index] = time
+    node_collection.n_nodes += 1
+    # This is a new node, so it's necessary computed for now
+    node_collection.n_nodes_computed += 1
+    return node_collection.n_nodes - 1
+
+
+@njit(void(get_type(NodeCollection), uint32, uint32))
+def copy_node(node_collection, first, second):
+    # We must NOT copy the index
+    node_collection.is_leaf[second] = node_collection.is_leaf[first]
+    node_collection.depth[second] = node_collection.depth[first]
+    node_collection.n_samples[second] = node_collection.n_samples[first]
+    node_collection.parent[second] = node_collection.parent[first]
+    node_collection.left[second] = node_collection.left[first]
+    node_collection.right[second] = node_collection.right[first]
+    node_collection.feature[second] = node_collection.feature[first]
+    node_collection.y_t[second] = node_collection.y_t[first]
+    node_collection.weight[second] = node_collection.weight[first]
+    node_collection.log_weight_tree[second] = node_collection.log_weight_tree[first]
+    node_collection.threshold[second] = node_collection.threshold[first]
+    node_collection.time[second] = node_collection.time[first]
+    node_collection.counts[second, :] = node_collection.counts[first, :]
+    node_collection.memorized[second] = node_collection.memorized[first]
+    node_collection.memory_range_min[second, :] = node_collection.memory_range_min[
+        first, :
+    ]
+    node_collection.memory_range_max[second, :] = node_collection.memory_range_max[
+        first, :
+    ]

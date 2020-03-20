@@ -1,9 +1,9 @@
 # Authors: Stephane Gaiffas <stephane.gaiffas@gmail.com>
 # License: BSD 3 clause
-
 import numpy as np
-from numba import jitclass
-from .types import float32, uint32, get_array_2d_type
+from numba import jitclass, njit
+from .types import float32, uint32, get_array_2d_type, void
+from .utils import get_type
 
 
 spec_samples_collection = [
@@ -14,9 +14,6 @@ spec_samples_collection = [
 ]
 
 
-# TODO: this requires serious improvements, such as pre-allocating things in
-#  advance instead of just what is required each time
-
 # TODO: write all the docstrings
 
 
@@ -26,18 +23,20 @@ class SamplesCollection(object):
         self.reserve_samples = reserve_samples
         self.n_samples = 0
 
-    def append(self, X, y):
-        n_samples_batch, n_features = X.shape
-        if self.n_samples == 0:
-            self.n_samples += n_samples_batch
-            # TODO: use copy instead or something else instead ?
-            features = np.empty((n_samples_batch, n_features), dtype=float32)
-            features[:] = X
-            self.features = features
-            labels = np.empty(n_samples_batch, dtype=float32)
-            labels[:] = y
-            self.labels = labels
-        else:
-            self.n_samples += n_samples_batch
-            self.features = np.concatenate((self.features, X))
-            self.labels = np.concatenate((self.labels, y))
+
+@njit(void(get_type(SamplesCollection), get_array_2d_type(float32), float32[::1]))
+def add_samples(samples, X, y):
+    n_samples_batch, n_features = X.shape
+    if samples.n_samples == 0:
+        samples.n_samples += n_samples_batch
+        # TODO: use copy instead or something else instead ?
+        features = np.empty((n_samples_batch, n_features), dtype=float32)
+        features[:] = X
+        samples.features = features
+        labels = np.empty(n_samples_batch, dtype=float32)
+        labels[:] = y
+        samples.labels = labels
+    else:
+        samples.n_samples += n_samples_batch
+        samples.features = np.concatenate((samples.features, X))
+        samples.labels = np.concatenate((samples.labels, y))

@@ -5,9 +5,9 @@ import numpy as np
 from numba import jitclass
 from .types import float32, boolean, uint32, string
 
-from .node_collection import NodeCollection
+from .node_collection import NodeCollection, add_node
 from .sample import SamplesCollection
-from .utils import get_type, get_dtype
+from .utils import get_type
 
 spec_tree_classifier = [
     ("n_classes", uint32),
@@ -59,12 +59,4 @@ class TreeClassifier(object):
         self.add_root()
 
     def add_root(self):
-        self.add_node(0, 0.0)
-
-    def add_node(self, parent, time):
-        return self.nodes.add_node(parent, time)
-
-    def print(self):
-        print("Hello from jitclass")
-        print(self.nodes.n_nodes_reserved)
-        print(self.nodes.n_nodes)
+        add_node(self.nodes, 0, 0.0)

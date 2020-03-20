@@ -1,7 +1,5 @@
 # Authors: Stephane Gaiffas <stephane.gaiffas@gmail.com>
 # License: BSD 3 clause
-
-
 import numpy as np
 
 

@@ -29,27 +29,6 @@ def get_type(class_):
         return class_type.instance_type
 
 
-def get_dtype(dtype):
-    """Gives the numba dtype or a string of the dtype depending on the value of the
-    NUMBA_DISABLE_JIT environment variable. This helps to get correct coverage of the
-    code.
-
-    Parameters
-    ----------
-    dtype : `dtype`
-        A numba dtype
-
-    Returns
-    -------
-    output : `dtype` or `str`
-        The same numba dtype of a `str` NUMBA_DISABLE_JIT=="1"
-    """
-    if os.getenv("NUMBA_DISABLE_JIT", None) == "1":
-        return str(dtype)
-    else:
-        return dtype
-
-
 @njit
 def resize_array(arr, keep, size, ones=False):
     """Resize the given array along the first axis only, preserving the same
