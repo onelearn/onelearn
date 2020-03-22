@@ -8,11 +8,7 @@
 	
 # `onelearn`: Online learning in Python
 
----
-
 [Documentation](https://onelearn.readthedocs.io) | [Reproduce experiments](https://onelearn.readthedocs.io/en/latest/experiments.html) |
-
----
 
 `onelearn` stands for ONE-shot LEARNning. It is a small python package for **online learning** with ``Python``.
 It provides :
