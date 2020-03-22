@@ -5,60 +5,41 @@
 [![GitHub issues](https://img.shields.io/github/issues/onelearn/onelearn)](https://github.com/onelearn/onelearn/issues)
 [![GitHub license](https://img.shields.io/github/license/onelearn/onelearn)](https://github.com/onelearn/onelearn/blob/master/LICENSE)
 [![Coverage Status](https://coveralls.io/repos/github/onelearn/onelearn/badge.svg)](https://coveralls.io/github/onelearn/onelearn)
-
-
-	https://img.shields.io/github/issues/onelearn/onelearn
 	
-# `onelearn`: machine learning lgorithms for ONline LEARNing
+# `onelearn`: Online learning in Python
 
-This `GitHub` repository contains for now the algorithms described in the paper
+---
 
-> *AMF: Aggregated Mondrian Forests for Online Learning*
-> 
-> by J. Mourtada, S. Gaïffas and E. Scornet
-> 
-> arXiv link: http://arxiv.org/abs/1906.10529
+[Documentation](https://onelearn.readthedocs.io) | [Reproduce experiments](https://onelearn.readthedocs.io/en/latest/experiments.html) |
 
-It provides mainly the `AMFClassifier` and the `AMFRegressor`, together with a weak 
-baseline called `OnlineDummyClassifier`. 
+---
 
+`onelearn` stands for ONE-shot LEARNning. It is a small python package for **online learning** with ``Python``.
+It provides :
 
-Running the experiments requires the installation of scikit-garden, for a comparison
-with Mondrian forests.
-```bash
-git clone https://github.com/scikit-garden/scikit-garden.git && \
-    cd scikit-garden && \
-    python setup.py build install
-```
+- **online** (or **one-shot**) learning algorithms: each sample is processed **once**, only a 
+  single pass is performed on the data
+- including **multi-class classification** and regression algorithms
+- For now, only *ensemble* methods, namely **Random Forests**
 
 
-# Reproducing the experiments from the paper
+## Installation
 
-## Figure 1
+The easiest way to install ``onelearn`` is using ``pip``
 
-The decision function along iterations
+    pip install onelearn
 
-```bash
-python plot_iterations.py
-```
 
-## Figure 3
+But you can also use the latest development from github directly with
 
-The decision function over some toy datasets
+    pip install git+https://github.com/onelearn/onelearn.git
 
-```bash
-python plot_decisions.py
-```
+## References
 
-## Figure 6
-
-Comparisons of average losses over 10 datasets
-
-## Figure 7
-
-Test AUC
-
-## Figure 8
-
-Sensitivity to the number of trees
-
+    @article{mourtada2019amf,
+      title={AMF: Aggregated Mondrian Forests for Online Learning},
+      author={Mourtada, Jaouad and Ga{\"\i}ffas, St{\'e}phane and Scornet, Erwan},
+      journal={arXiv preprint arXiv:1906.10529},
+      year={2019}
+    }
+ 
