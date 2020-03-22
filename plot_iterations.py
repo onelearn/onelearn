@@ -68,7 +68,7 @@ for start, end in zip(save_iterations[:-1], save_iterations[1:]):
     ax = plt.subplot(1, n_plots, n_fig)
 
     score = roc_auc_score(y_test, clf.predict_proba(X_test)[:, 1])
-    plot_contour_binary_classif(ax, xx, yy, Z, score=score)
+    plot_contour_binary_classif(ax, xx, yy, Z, score=score, levels=20)
 
     plot_scatter_binary_classif(
         ax,
