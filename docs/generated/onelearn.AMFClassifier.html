@@ -1,0 +1,303 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>onelearn.AMFClassifier &#8212; onelearn 0.2 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="Classification" href="../classification.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">onelearn</a></h1>
+
+
+
+<p class="blurb">Online learning in Python</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=onelearn&repo=onelearn&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+    
+
+<p>
+<a class="badge" href="https://travis-ci.org/onelearn/onelearn">
+    <img
+        alt="https://secure.travis-ci.org/onelearn/onelearn.svg?branch=master"
+        src="https://secure.travis-ci.org/onelearn/onelearn.svg?branch=master"
+    />
+</a>
+</p>
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../classification.html">Classification</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">onelearn.AMFClassifier</a></li>
+</ul>
+</li>
+</ul>
+
+
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="onelearn-amfclassifier">
+<h1>onelearn.AMFClassifier<a class="headerlink" href="#onelearn-amfclassifier" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="onelearn.AMFClassifier">
+<em class="property">class </em><code class="sig-prename descclassname">onelearn.</code><code class="sig-name descname">AMFClassifier</code><span class="sig-paren">(</span><em class="sig-param">n_classes</em>, <em class="sig-param">n_estimators=10</em>, <em class="sig-param">step=1.0</em>, <em class="sig-param">loss='log'</em>, <em class="sig-param">use_aggregation=True</em>, <em class="sig-param">dirichlet=None</em>, <em class="sig-param">split_pure=False</em>, <em class="sig-param">n_jobs=1</em>, <em class="sig-param">reserve_samples=1024</em>, <em class="sig-param">random_state=None</em>, <em class="sig-param">verbose: bool = True</em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/onelearn/onelearn/blob/d2ca3ce/onelearn/forest.py#L168"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#onelearn.AMFClassifier" title="Permalink to this definition">¶</a></dt>
+<dd><p>Aggregated Mondrian Forest classifier for online learning. This algorithm
+is truly online, in the sense that a single pass is performed, and one can
+ask for predictions anytime.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n_classes</strong> (<cite>int</cite>) – Number of excepted classes in the labels. This is required since we
+don’t know the number of classes in advance in a online setting.</p></li>
+<li><p><strong>n_estimators</strong> (<cite>int</cite>, optional (default=10)) – Number of trees to grow in the forest.</p></li>
+<li><p><strong>step</strong> (<cite>float</cite>, optional (default=1)) – Step-size for the aggregation weights. Default is 1 for classification,
+which is typically the best choice.</p></li>
+<li><p><strong>loss</strong> (<em>'str'</em><em>, </em><em>optional</em><em> (</em><em>default='log'</em><em>)</em>) – The loss used for the computation of the aggregation weights. Only <cite>log</cite>
+is supported for now, namely the log-loss for multi-class
+classification.</p></li>
+<li><p><strong>use_aggregation</strong> (<cite>bool</cite>, optional (default=True)) – Whether to use aggregation in each tree. It is highly recommended to
+leave it as <cite>True</cite>.</p></li>
+<li><p><strong>dirichlet</strong> (<cite>float</cite> or <cite>None</cite>, optional (default=None)) – <p>Each node in a tree predicts according to the distribution of the labels
+it contains. This distribution is regularized using a “Jeffreys” prior
+with parameter <cite>dirichlet</cite>. For each class with <cite>count</cite> labels in the
+node and <cite>n_samples</cite> samples in it, the prediction of a node is given by
+(count + dirichlet) / (n_samples + dirichlet * n_classes).</p>
+<p>Default is dirichlet=0.5 for n_classes=2 and dirichlet=0.01 otherwise.</p>
+</p></li>
+<li><p><strong>split_pure</strong> (<cite>bool</cite>, optional (default=False)) – Whether we split nodes that contain only one class of labels. Default is
+False.</p></li>
+<li><p><strong>n_jobs</strong> (<cite>int</cite>, optional (default=1)) – The number of threads used to grow the tree in parallel. This has no
+effect for now, the default is n_jobs=1, namely single-threaded.</p></li>
+<li><p><strong>reserve_samples</strong> (<cite>int</cite>, optional (default=1024)) – Each time extra memory is required for new samples and new nodes, pre-allocate
+what is required for <cite>reserve_samples</cite> in advance.</p></li>
+<li><p><strong>random_state</strong> (<cite>int</cite> or <cite>None</cite>, optional (default=None)) – Controls the randomness involved in the trees growing, which is a highly
+randomized process.</p></li>
+<li><p><strong>verbose</strong> (<cite>bool</cite>, optional (default=True)) – Whether a bar showing progress for <cite>partial_fit</cite>, <cite>predict_proba</cite> and
+<cite>predict</cite> should be used.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt>
+<code class="sig-name descname">n_classes = `int`</code></dt>
+<dd><p>Number of excepted classes in the labels.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="onelearn.AMFClassifier.n_features">
+<code class="sig-name descname">n_features</code><a class="headerlink" href="#onelearn.AMFClassifier.n_features" title="Permalink to this definition">¶</a></dt>
+<dd><p>The number of features from the training dataset (passed to <code class="docutils literal notranslate"><span class="pre">fit</span></code>)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><cite>int</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="sig-name descname"># TODO</code></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>add missing attributes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Notes</p>
+<p>Note that all the parameters of AMFClassifier become read-only after the
+first call to <cite>partial_fit</cite></p>
+<p class="rubric">References</p>
+<p>TODO : add the reference of the paper</p>
+<dl class="method">
+<dt id="onelearn.AMFClassifier.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">n_classes</em>, <em class="sig-param">n_estimators=10</em>, <em class="sig-param">step=1.0</em>, <em class="sig-param">loss='log'</em>, <em class="sig-param">use_aggregation=True</em>, <em class="sig-param">dirichlet=None</em>, <em class="sig-param">split_pure=False</em>, <em class="sig-param">n_jobs=1</em>, <em class="sig-param">reserve_samples=1024</em>, <em class="sig-param">random_state=None</em>, <em class="sig-param">verbose: bool = True</em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/onelearn/onelearn/blob/d2ca3ce/onelearn/forest.py#L244"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#onelearn.AMFClassifier.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#onelearn.AMFClassifier.__init__" title="onelearn.AMFClassifier.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(n_classes[, n_estimators, step, …])</p></td>
+<td><p>Initialize self.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_nodes_df</span></code>(idx_tree)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">partial_fit</span></code>(X, y[, classes])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#onelearn.AMFClassifier.predict_proba" title="onelearn.AMFClassifier.predict_proba"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_proba</span></code></a>(X)</p></td>
+<td><p>Predict class for given samples</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#onelearn.AMFClassifier.predict_proba_tree" title="onelearn.AMFClassifier.predict_proba_tree"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_proba_tree</span></code></a>(X, tree)</p></td>
+<td><p>Predict class for given samples using a single tree.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">dirichlet</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">loss</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">n_classes</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">n_estimators</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#onelearn.AMFClassifier.n_features" title="onelearn.AMFClassifier.n_features"><code class="xref py py-obj docutils literal notranslate"><span class="pre">n_features</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">n_jobs</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">random_state</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">reserve_samples</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">split_pure</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">step</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">use_aggregation</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">verbose</span></code></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="onelearn.AMFClassifier.predict_proba">
+<code class="sig-name descname">predict_proba</code><span class="sig-paren">(</span><em class="sig-param">X</em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/onelearn/onelearn/blob/d2ca3ce/onelearn/forest.py#L345"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#onelearn.AMFClassifier.predict_proba" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predict class for given samples</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>X</strong> (<cite>np.ndarray</cite>, shape=(n_samples, n_features)) – Features matrix to predict for</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>output</strong> – Returns the predicted class probabilities</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>np.ndarray</cite>, shape=(n_samples, n_classes)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="onelearn.AMFClassifier.predict_proba_tree">
+<code class="sig-name descname">predict_proba_tree</code><span class="sig-paren">(</span><em class="sig-param">X</em>, <em class="sig-param">tree</em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/onelearn/onelearn/blob/d2ca3ce/onelearn/forest.py#L392"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#onelearn.AMFClassifier.predict_proba_tree" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predict class for given samples using a single tree. Mainly useful  for
+debugging or visualisation purposes</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<cite>np.ndarray</cite>, shape=(n_samples, n_features)) – Features matrix to predict for</p></li>
+<li><p><strong>tree</strong> (<cite>int</cite>) – Number of the tree, must be between 0 and <cite>n_estimators</cite> - 1</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>output</strong> – Returns the predicted class probabilities</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>np.ndarray</cite>, shape=(n_samples, n_classes)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &copy;2020, <a href="https://github.com/onelearn/onelearn/graphs/contributors">onelearn developers</a>. Updated on mars 22, 2020.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/generated/onelearn.AMFClassifier.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/onelearn/onelearn" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>
