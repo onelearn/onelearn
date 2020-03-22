@@ -1,0 +1,166 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>This is onelearn’s documentation &#8212; onelearn 0.2 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Classification" href="classification.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">onelearn</a></h1>
+
+
+
+<p class="blurb">Online learning in Python</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=onelearn&repo=onelearn&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+    
+
+<p>
+<a class="badge" href="https://travis-ci.org/onelearn/onelearn">
+    <img
+        alt="https://secure.travis-ci.org/onelearn/onelearn.svg?branch=master"
+        src="https://secure.travis-ci.org/onelearn/onelearn.svg?branch=master"
+    />
+</a>
+</p>
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="classification.html">Classification</a></li>
+</ul>
+
+
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="this-is-onelearn-s-documentation">
+<h1>This is <code class="docutils literal notranslate"><span class="pre">onelearn</span></code>’s documentation<a class="headerlink" href="#this-is-onelearn-s-documentation" title="Permalink to this headline">¶</a></h1>
+<a class="reference external image-reference" href="https://travis-ci.org/onelearn/onelearn"><img alt="https://travis-ci.org/onelearn/onelearn.svg?branch=master" src="https://travis-ci.org/onelearn/onelearn.svg?branch=master" /></a>
+<a class="reference external image-reference" href="https://coveralls.io/github/onelearn/onelearn?branch=master"><img alt="https://coveralls.io/repos/github/onelearn/onelearn/badge.svg?branch=master" src="https://coveralls.io/repos/github/onelearn/onelearn/badge.svg?branch=master" /></a>
+<img alt="_images/iterations.pdf" src="_images/iterations.pdf" />
+<p><code class="docutils literal notranslate"><span class="pre">onelearn</span></code> stands for ONE-shot LEARNning. It is a small python package for <strong>online learning</strong> with <code class="docutils literal notranslate"><span class="pre">Python</span></code>.
+It provides :</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>online</strong> (or <strong>one-shot</strong>) learning algorithms: each sample is processed <strong>once</strong>, only a
+single pass is performed on the data</p></li>
+<li><p>including <strong>multi-class classification</strong> and regression algorithms</p></li>
+<li><p>For now, only <em>ensemble</em> methods, namely <strong>Random Forests</strong></p></li>
+</ul>
+</div></blockquote>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">onelearn</span></code> follows the <code class="docutils literal notranslate"><span class="pre">scikit-learn</span></code> API: you call <code class="docutils literal notranslate"><span class="pre">fit</span></code> instead <code class="docutils literal notranslate"><span class="pre">partial_fit</span></code> each
+time a new bunch of data is available and use <code class="docutils literal notranslate"><span class="pre">predict_proba</span></code> or <code class="docutils literal notranslate"><span class="pre">predict</span></code> whenever you
+need predictions.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">onelearn</span> <span class="kn">import</span> <span class="n">AMFClassifier</span>
+
+<span class="n">amf</span> <span class="o">=</span> <span class="n">AMFClassifier</span><span class="p">(</span><span class="n">n_classes</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">clf</span><span class="o">.</span><span class="n">partial_fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+<span class="n">y_pred</span> <span class="o">=</span> <span class="n">clf</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X_test</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>The easiest way to install <code class="docutils literal notranslate"><span class="pre">onelearn</span></code> is using <code class="docutils literal notranslate"><span class="pre">pip</span></code> :</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install onelearn
+</pre></div>
+</div>
+<p>But you can also use the latest development from github directly with</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">git</span><span class="o">+</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">onelearn</span><span class="o">/</span><span class="n">onelearn</span><span class="o">.</span><span class="n">git</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="where-to-go-from-here">
+<h2>Where to go from here?<a class="headerlink" href="#where-to-go-from-here" title="Permalink to this headline">¶</a></h2>
+<p>To know more about onelearn, check out our <a class="reference external" href="https://scikit-learn.org/stable/auto_examples/index.html#sphx-glr-auto-examples" title="(in scikit-learn v0.22)"><span class="xref std std-ref">example gallery</span></a> or
+browse through the module reference using the left navigation bar.</p>
+<div class="toctree-wrapper compound">
+</div>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &copy;2020, <a href="https://github.com/onelearn/onelearn/graphs/contributors">onelearn developers</a>. Updated on mars 22, 2020.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/onelearn/onelearn" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

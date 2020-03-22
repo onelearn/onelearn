@@ -1,0 +1,43 @@
+onelearn.AMFClassifier
+======================
+
+.. currentmodule:: onelearn
+
+.. autoclass:: AMFClassifier
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~AMFClassifier.__init__
+      ~AMFClassifier.get_nodes_df
+      ~AMFClassifier.partial_fit
+      ~AMFClassifier.predict_proba
+      ~AMFClassifier.predict_proba_tree
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~AMFClassifier.dirichlet
+      ~AMFClassifier.loss
+      ~AMFClassifier.n_classes
+      ~AMFClassifier.n_estimators
+      ~AMFClassifier.n_features
+      ~AMFClassifier.n_jobs
+      ~AMFClassifier.random_state
+      ~AMFClassifier.reserve_samples
+      ~AMFClassifier.split_pure
+      ~AMFClassifier.step
+      ~AMFClassifier.use_aggregation
+      ~AMFClassifier.verbose
+   
+   
