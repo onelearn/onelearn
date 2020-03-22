@@ -79,12 +79,4 @@ browse through the module reference using the left navigation bar.
 
    classification
    regression
-
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   experiments
