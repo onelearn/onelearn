@@ -8,10 +8,20 @@ This is ``onelearn``'s documentation
 
 .. image:: https://travis-ci.org/onelearn/onelearn.svg?branch=master
    :target: https://travis-ci.org/onelearn/onelearn
+.. image:: https://readthedocs.org/projects/onelearn/badge/?version=latest
+   :target: https://onelearn.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
+.. image:: https://img.shields.io/github/stars/onelearn/onelearn
+   :alt: GitHub stars
+   :target: https://github.com/onelearn/onelearn/stargazers
+.. image:: https://img.shields.io/github/issues/onelearn/onelearn
+   :alt: GitHub issues
+   :target: https://github.com/onelearn/onelearn/issues
+.. image:: https://img.shields.io/github/license/onelearn/onelearn
+   :alt: GitHub license
+   :target: https://github.com/onelearn/onelearn/blob/master/LICENSE
 .. image:: https://coveralls.io/repos/github/onelearn/onelearn/badge.svg?branch=master
    :target: https://coveralls.io/github/onelearn/onelearn?branch=master
-
-.. image:: iterations.pdf
 
 
 ``onelearn`` stands for ONE-shot LEARNning. It is a small python package for **online learning** with ``Python``.
@@ -36,6 +46,11 @@ need predictions.
    amf = AMFClassifier(n_classes=2)
    clf.partial_fit(X_train, y_train)
    y_pred = clf.predict_proba(X_test)[:, 1]
+
+Each time you call ``partial_fit`` the algorithm updates its decision function using the
+new data as illustrated in the next figure.
+
+.. image:: images/iterations.pdf
 
 Installation
 ------------

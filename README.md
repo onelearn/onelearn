@@ -1,7 +1,14 @@
 
 [![Build Status](https://travis-ci.com/onelearn/onelearn.svg?branch=master)](https://travis-ci.com/onelearn/onelearn)
+[![Documentation Status](https://readthedocs.org/projects/onelearn/badge/?version=latest)](https://onelearn.readthedocs.io/en/latest/?badge=latest)
+[![GitHub stars](https://img.shields.io/github/stars/onelearn/onelearn)](https://github.com/onelearn/onelearn/stargazers)
+[![GitHub issues](https://img.shields.io/github/issues/onelearn/onelearn)](https://github.com/onelearn/onelearn/issues)
+[![GitHub license](https://img.shields.io/github/license/onelearn/onelearn)](https://github.com/onelearn/onelearn/blob/master/LICENSE)
 [![Coverage Status](https://coveralls.io/repos/github/onelearn/onelearn/badge.svg)](https://coveralls.io/github/onelearn/onelearn)
 
+
+	https://img.shields.io/github/issues/onelearn/onelearn
+	
 # `onelearn`: machine learning lgorithms for ONline LEARNing
 
 This `GitHub` repository contains for now the algorithms described in the paper

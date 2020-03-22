@@ -98,10 +98,12 @@ html_theme_options = {
     "github_repo": "onelearn",
     "github_button": True,
     "fixed_sidebar": True,
-    "travis_button": True,
+    "travis_button": False,
     "logo_text_align": "center",
     "github_banner": True,
 }
+
+html_logo = "images/logo.png"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

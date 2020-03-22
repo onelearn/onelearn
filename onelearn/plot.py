@@ -41,6 +41,8 @@ def plot_scatter_binary_classif(
     ax.set_ylim(yy.min(), yy.max())
     ax.set_xticks(())
     ax.set_yticks(())
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
 
 
 def plot_contour_binary_classif(
@@ -53,6 +55,8 @@ def plot_contour_binary_classif(
     ax.set_ylim(yy.min(), yy.max())
     ax.set_xticks(())
     ax.set_yticks(())
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
     if title is not None:
         ax.set_title(title)
     if score is not None:

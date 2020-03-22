@@ -2,8 +2,8 @@
 __pycache__/
 *.py[cod]
 *$py.class
-docsource/_build/
-docsource/generated/
+docs/_build/
+docs/generated/
 *.pdf
 *.pkl
 
