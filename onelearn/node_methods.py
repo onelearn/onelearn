@@ -4,16 +4,16 @@
 from math import log
 from numpy.random import exponential
 from numba import njit
-from numba.types import float32, boolean, uint32, uint8, void, Tuple
-
+from numba import types
+from .types import float32, boolean, uint32, uint8, void, Tuple
 from .tree import TreeClassifier
-from .utils import log_sum_2_exp
+from .utils import log_sum_2_exp, get_type
 
 
 # TODO: write all the docstrings
 
 
-@njit(float32(TreeClassifier.class_type.instance_type, uint32, uint32))
+@njit(float32(get_type(TreeClassifier), uint32, uint32))
 def node_score(tree, node, idx_class):
     """Computes the score of the node
 
@@ -45,15 +45,15 @@ def node_score(tree, node, idx_class):
     return (count + dirichlet) / (n_samples + dirichlet * n_classes)
 
 
-@njit(float32(TreeClassifier.class_type.instance_type, uint32, uint32))
+@njit(float32(get_type(TreeClassifier), uint32, uint32))
 def node_loss(tree, node, idx_sample):
-    c = uint8(tree.samples.labels[idx_sample])
+    c = types.uint8(tree.samples.labels[idx_sample])
     sc = node_score(tree, node, c)
     # TODO: benchmark different logarithms
     return -log(sc)
 
 
-@njit(float32(TreeClassifier.class_type.instance_type, uint32, uint32))
+@njit(float32(get_type(TreeClassifier), uint32, uint32))
 def node_update_weight(tree, idx_node, idx_sample):
     loss_t = node_loss(tree, idx_node, idx_sample)
     if tree.use_aggregation:
@@ -61,10 +61,10 @@ def node_update_weight(tree, idx_node, idx_sample):
     return loss_t
 
 
-@njit(void(TreeClassifier.class_type.instance_type, uint32, uint32))
+@njit(void(get_type(TreeClassifier), uint32, uint32))
 def node_update_count(tree, idx_node, idx_sample):
     # TODO: Don't do it twice...
-    c = uint32(tree.samples.labels[idx_sample])
+    c = types.uint32(tree.samples.labels[idx_sample])
     tree.nodes.counts[idx_node, c] += 1
 
 
@@ -122,7 +122,7 @@ def node_print(tree, idx_node):
     )
 
 
-@njit(void(TreeClassifier.class_type.instance_type, uint32, uint32, boolean))
+@njit(void(get_type(TreeClassifier), uint32, uint32, boolean))
 def node_update_downwards(tree, idx_node, idx_sample, do_update_weight):
     x_t = tree.samples.features[idx_sample]
     memory_range_min = tree.nodes.memory_range_min[idx_node]
@@ -155,7 +155,7 @@ def node_update_downwards(tree, idx_node, idx_sample, do_update_weight):
     node_update_count(tree, idx_node, idx_sample)
 
 
-@njit(void(TreeClassifier.class_type.instance_type, uint32))
+@njit(void(get_type(TreeClassifier), uint32))
 def node_update_weight_tree(tree, idx_node):
     if tree.nodes.is_leaf[idx_node]:
         tree.nodes.log_weight_tree[idx_node] = tree.nodes.weight[idx_node]
@@ -169,7 +169,7 @@ def node_update_weight_tree(tree, idx_node):
         )
 
 
-@njit(void(TreeClassifier.class_type.instance_type, uint32, uint8))
+@njit(void(get_type(TreeClassifier), uint32, uint8))
 def node_update_depth(tree, idx_node, depth):
     depth += 1
     tree.nodes.depth[idx_node] = depth
@@ -182,15 +182,15 @@ def node_update_depth(tree, idx_node, depth):
         node_update_depth(tree, right, depth)
 
 
-@njit(boolean(TreeClassifier.class_type.instance_type, uint32, float32))
+@njit(boolean(get_type(TreeClassifier), uint32, float32))
 def node_is_dirac(tree, idx_node, y_t):
-    c = uint8(y_t)
+    c = types.uint8(y_t)
     n_samples = tree.nodes.n_samples[idx_node]
     count = tree.nodes.counts[idx_node, c]
     return n_samples == count
 
 
-@njit(uint32(TreeClassifier.class_type.instance_type, uint32, float32[::1]))
+@njit(uint32(get_type(TreeClassifier), uint32, float32[::1]))
 def node_get_child(tree, idx_node, x_t):
     feature = tree.nodes.feature[idx_node]
     threshold = tree.nodes.threshold[idx_node]
@@ -200,9 +200,7 @@ def node_get_child(tree, idx_node, x_t):
         return tree.nodes.right[idx_node]
 
 
-@njit(
-    Tuple((float32, float32))(TreeClassifier.class_type.instance_type, uint32, uint32)
-)
+@njit(Tuple((float32, float32))(get_type(TreeClassifier), uint32, uint32))
 def node_range(tree, idx_node, j):
     # TODO: do the version without memory...
     if tree.nodes.n_samples[idx_node] == 0:
@@ -214,9 +212,7 @@ def node_range(tree, idx_node, j):
         )
 
 
-@njit(
-    float32(TreeClassifier.class_type.instance_type, uint32, float32[::1], float32[::1])
-)
+@njit(float32(get_type(TreeClassifier), uint32, float32[::1], float32[::1]))
 def node_compute_range_extension(tree, idx_node, x_t, extensions):
     extensions_sum = 0
     for j in range(tree.n_features):
@@ -233,14 +229,14 @@ def node_compute_range_extension(tree, idx_node, x_t, extensions):
     return extensions_sum
 
 
-@njit(void(TreeClassifier.class_type.instance_type, uint32, float32[::1]))
+@njit(void(get_type(TreeClassifier), uint32, float32[::1]))
 def node_predict(tree, idx_node, scores):
     # TODO: this is a bit silly ?... do everything at once
     for c in range(tree.n_classes):
         scores[c] = node_score(tree, idx_node, c)
 
 
-@njit(float32(TreeClassifier.class_type.instance_type, uint32, uint32))
+@njit(float32(get_type(TreeClassifier), uint32, uint32))
 def node_compute_split_time(tree, idx_node, idx_sample):
     y_t = tree.samples.labels[idx_sample]
     #  Don't split if the node is pure: all labels are equal to the one of y_t
@@ -282,16 +278,7 @@ def node_compute_split_time(tree, idx_node, idx_sample):
     return 0
 
 
-@njit(
-    void(
-        TreeClassifier.class_type.instance_type,
-        uint32,
-        float32,
-        float32,
-        uint32,
-        boolean,
-    )
-)
+@njit(void(get_type(TreeClassifier), uint32, float32, float32, uint32, boolean,))
 def node_split(tree, idx_node, split_time, threshold, feature, is_right_extension):
     # Create the two splits
     left_new = tree.nodes.add_node(idx_node, split_time)

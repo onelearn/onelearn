@@ -6,7 +6,8 @@ install:
   - pip install poetry
   - poetry install -v
 script:
-  - pytest -v --cov=onelearn tests/
+  - pytest -v
+  - NUMBA_DISABLE_JIT=1 pytest -v --cov=onelearn tests/
 after_success: coveralls
 cache:
   pip: true

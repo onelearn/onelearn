@@ -3,10 +3,11 @@
 
 import numpy as np
 from numba import jitclass
-from numba.types import float32, boolean, uint32, string
+from .types import float32, boolean, uint32, string
 
 from .node_collection import NodeCollection
 from .sample import SamplesCollection
+from .utils import get_type, get_dtype
 
 spec_tree_classifier = [
     ("n_classes", uint32),
@@ -16,8 +17,8 @@ spec_tree_classifier = [
     ("use_aggregation", boolean),
     ("dirichlet", float32),
     ("split_pure", boolean),
-    ("samples", SamplesCollection.class_type.instance_type),
-    ("nodes", NodeCollection.class_type.instance_type),
+    ("samples", get_type(SamplesCollection)),
+    ("nodes", get_type(NodeCollection)),
     ("intensities", float32[::1]),
     ("iteration", uint32),
 ]

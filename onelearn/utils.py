@@ -1,12 +1,53 @@
 # Authors: Stephane Gaiffas <stephane.gaiffas@gmail.com>
 # License: BSD 3 clause
-
+import os
 from math import log, exp
-
 import numpy as np
+from numpy.random import uniform
 from numba import njit
 from numba.types import float32, uint32
-from numpy.random import uniform
+
+
+def get_type(class_):
+    """Gives the numba type of an object is numba.jit decorators are enabled and None
+    otherwise. This helps to get correct coverage of the code
+
+    Parameters
+    ----------
+    class_ : `object`
+        A class
+
+    Returns
+    -------
+    output : `object`
+        A numba type of None
+    """
+    class_type = getattr(class_, "class_type", None)
+    if class_type is None:
+        return class_type
+    else:
+        return class_type.instance_type
+
+
+def get_dtype(dtype):
+    """Gives the numba dtype or a string of the dtype depending on the value of the
+    NUMBA_DISABLE_JIT environment variable. This helps to get correct coverage of the
+    code.
+
+    Parameters
+    ----------
+    dtype : `dtype`
+        A numba dtype
+
+    Returns
+    -------
+    output : `dtype` or `str`
+        The same numba dtype of a `str` NUMBA_DISABLE_JIT=="1"
+    """
+    if os.getenv("NUMBA_DISABLE_JIT", None) == "1":
+        return str(dtype)
+    else:
+        return dtype
 
 
 @njit

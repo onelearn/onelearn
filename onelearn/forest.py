@@ -1,15 +1,15 @@
 # Authors: Stephane Gaiffas <stephane.gaiffas@gmail.com>
 # License: BSD 3 clause
-
+import os
 import numpy as np
 from numba import jitclass, njit
 from numba import types, _helperlib
-from numba.types import float32, boolean, uint32, string, void, int32
-
+from .types import float32, boolean, uint32, string, void, int32, get_array_2d_type
 from .checks import check_X_y, check_array
 from .sample import SamplesCollection
 from .tree import TreeClassifier
 from .tree_methods import tree_partial_fit, tree_predict
+from .utils import get_type, get_dtype
 
 spec = [
     ("n_classes", uint32),
@@ -23,8 +23,8 @@ spec = [
     ("n_jobs", uint32),
     ("reserve_samples", uint32),
     ("verbose", boolean),
-    ("trees", types.List(TreeClassifier.class_type.instance_type, reflected=True)),
-    ("samples", SamplesCollection.class_type.instance_type),
+    ("trees", types.List(get_type(TreeClassifier), reflected=True)),
+    ("samples", get_type(SamplesCollection)),
     ("iteration", uint32),
 ]
 
@@ -81,9 +81,7 @@ class AMFClassifierNoPython(object):
         self.trees = trees
 
 
-@njit(
-    void(AMFClassifierNoPython.class_type.instance_type, float32[:, ::1], float32[::1])
-)
+@njit(void(get_type(AMFClassifierNoPython), get_array_2d_type(float32), float32[::1],))
 def partial_fit(forest, X, y):
     n_samples_batch, n_features = X.shape
     # We need at least the actual number of nodes + twice the extra samples
@@ -126,7 +124,9 @@ def partial_fit(forest, X, y):
 
 @njit(
     void(
-        AMFClassifierNoPython.class_type.instance_type, float32[:, ::1], float32[:, ::1]
+        get_type(AMFClassifierNoPython),
+        get_array_2d_type(float32),
+        get_array_2d_type(float32),
     )
 )
 def predict_proba(forest, X, scores):
@@ -150,8 +150,8 @@ def predict_proba(forest, X, scores):
 
 
 @njit(
-    float32[:, ::1](
-        AMFClassifierNoPython.class_type.instance_type, uint32, float32[:, ::1]
+    get_array_2d_type(float32)(
+        get_type(AMFClassifierNoPython), uint32, get_array_2d_type(float32)
     )
 )
 def predict_proba_tree(forest, idx_tree, X):
@@ -284,6 +284,11 @@ class AMFClassifier(object):
         self.verbose = verbose
 
         self._classes = set(range(n_classes))
+
+        if os.getenv("NUMBA_DISABLE_JIT", None) == "1":
+            self._using_numba = False
+        else:
+            self._using_numba = True
 
     def partial_fit(self, X, y, classes=None):
         # TODO: write the docstring
@@ -454,21 +459,25 @@ class AMFClassifier(object):
         # This uses a trick by Alexandre Gramfort,
         #   see https://github.com/numba/numba/issues/3249
         if self._random_state >= 0:
-            r = np.random.RandomState(self._random_state)
-            ptr = _helperlib.rnd_get_np_state_ptr()
-            ints, index = r.get_state()[1:3]
-            _helperlib.rnd_set_state(ptr, (index, [int(x) for x in ints]))
-            self._ptr = ptr
-            self._r = r
+            if self._using_numba:
+                r = np.random.RandomState(self._random_state)
+                ptr = _helperlib.rnd_get_np_state_ptr()
+                ints, index = r.get_state()[1:3]
+                _helperlib.rnd_set_state(ptr, (index, [int(x) for x in ints]))
+                self._ptr = ptr
+                self._r = r
+            else:
+                np.random.seed(self._random_state)
 
     def _put_back_random_state(self):
         # This uses a trick by Alexandre Gramfort,
         #   see https://github.com/numba/numba/issues/3249
         if self._random_state >= 0:
-            ptr = self._ptr
-            r = self._r
-            index, ints = _helperlib.rnd_get_state(ptr)
-            r.set_state(("MT19937", ints, index, 0, 0.0))
+            if self._using_numba:
+                ptr = self._ptr
+                r = self._r
+                index, ints = _helperlib.rnd_get_state(ptr)
+                r.set_state(("MT19937", ints, index, 0, 0.0))
 
     def get_nodes_df(self, idx_tree):
         import pandas as pd

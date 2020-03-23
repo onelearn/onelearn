@@ -2,7 +2,7 @@
 # License: BSD 3 clause
 import numpy as np
 from numba import jitclass
-from numba.types import float32, boolean, uint32, uint8
+from .types import float32, boolean, uint32, uint8, get_array_2d_type
 
 from .utils import resize_array
 
@@ -38,13 +38,13 @@ spec_node_collection = [
     # Time of creation of the node
     ("time", float32[::1]),
     # Counts the number of sample seen in each class
-    ("counts", uint32[:, ::1]),
+    ("counts", get_array_2d_type(uint32)),
     # Is the range of the node is memorized ?
     ("memorized", boolean[::1]),
     # Minimum range of the data points in the node
-    ("memory_range_min", float32[:, ::1]),
+    ("memory_range_min", get_array_2d_type(float32)),
     # Maximum range of the data points in the node
-    ("memory_range_max", float32[:, ::1]),
+    ("memory_range_max", get_array_2d_type(float32)),
     # List of the samples contained in the range of the node (this allows to
     # compute the range whenever the range memory isn't used)
     # TODO: this is going to be a problem, we don't know in advance how many points end up in the node
