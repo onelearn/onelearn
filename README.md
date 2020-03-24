@@ -4,7 +4,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/onelearn/onelearn)](https://github.com/onelearn/onelearn/stargazers)
 [![GitHub issues](https://img.shields.io/github/issues/onelearn/onelearn)](https://github.com/onelearn/onelearn/issues)
 [![GitHub license](https://img.shields.io/github/license/onelearn/onelearn)](https://github.com/onelearn/onelearn/blob/master/LICENSE)
-[![Coverage Status](https://coveralls.io/repos/github/onelearn/onelearn/badge.svg)](https://coveralls.io/github/onelearn/onelearn)
+[![Coverage Status](https://coveralls.io/repos/github/onelearn/onelearn/badge.svg?branch=master)](https://coveralls.io/github/onelearn/onelearn?branch=master)
 	
 # `onelearn`: Online learning in Python
 

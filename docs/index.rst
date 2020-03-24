@@ -24,6 +24,7 @@ This is ``onelearn``'s documentation
    :target: https://coveralls.io/github/onelearn/onelearn?branch=master
 
 
+
 ``onelearn`` stands for ONE-shot LEARNning. It is a small python package for **online learning** with ``Python``.
 It provides :
 
