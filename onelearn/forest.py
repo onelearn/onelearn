@@ -4,12 +4,12 @@ import os
 import numpy as np
 from numba import jitclass, njit
 from numba import types, _helperlib
-from .types import float32, boolean, uint32, string, void, int32, get_array_2d_type
+from .types import float32, boolean, uint32, string, void, get_array_2d_type
 from .checks import check_X_y, check_array
-from .sample import SamplesCollection
+from .sample import SamplesCollection, add_samples
 from .tree import TreeClassifier
 from .tree_methods import tree_partial_fit, tree_predict
-from .utils import get_type, get_dtype
+from .utils import get_type
 
 spec = [
     ("n_classes", uint32),
@@ -84,42 +84,37 @@ class AMFClassifierNoPython(object):
 @njit(void(get_type(AMFClassifierNoPython), get_array_2d_type(float32), float32[::1],))
 def partial_fit(forest, X, y):
     n_samples_batch, n_features = X.shape
-    # We need at least the actual number of nodes + twice the extra samples
-
-    # Let's reserve nodes in advance
-    # for tree in forest.trees:
-    #     n_nodes_reserved = tree.nodes.n_nodes + 2 * n_samples_batch
-    #     tree.nodes.reserve_nodes(n_nodes_reserved)
-
     # First, we save the new batch of data
     n_samples_before = forest.samples.n_samples
-    forest.samples.append(X, y)
-
+    # Add the samples in the forest
+    add_samples(forest.samples, X, y)
     for i in range(n_samples_before, n_samples_before + n_samples_batch):
         # Then we fit all the trees using all new samples
         for tree in forest.trees:
             tree_partial_fit(tree, i)
         forest.iteration += 1
 
-    # def predict(self, X, scores):
-    #     scores.fill(0.0)
-    #     n_samples_batch, _ = X.shape
-    #     if self.iteration > 0:
-    #         scores_tree = np.empty(self.n_classes, float32)
-    #         for i in range(n_samples_batch):
-    #             # print('i:', i)
-    #             scores_i = scores[i]
-    #             x_i = X[i]
-    #             # print('x_i:', x_i)
-    #             # The prediction is simply the average of the predictions
-    #             for tree in self.trees:
-    #                 tree_predict(tree, x_i, scores_tree, self.use_aggregation)
-    #                 # print('scores_tree:', scores_tree)
-    #                 scores_i += scores_tree
-    #             scores_i /= self.n_estimators
-    #             # print('scores_i:', scores_i)
-    #     else:
-    #         raise RuntimeError("You must call ``partial_fit`` before ``predict``.")
+
+# TODO: code predict
+# def predict(self, X, scores):
+#     scores.fill(0.0)
+#     n_samples_batch, _ = X.shape
+#     if self.iteration > 0:
+#         scores_tree = np.empty(self.n_classes, float32)
+#         for i in range(n_samples_batch):
+#             # print('i:', i)
+#             scores_i = scores[i]
+#             x_i = X[i]
+#             # print('x_i:', x_i)
+#             # The prediction is simply the average of the predictions
+#             for tree in self.trees:
+#                 tree_predict(tree, x_i, scores_tree, self.use_aggregation)
+#                 # print('scores_tree:', scores_tree)
+#                 scores_i += scores_tree
+#             scores_i /= self.n_estimators
+#             # print('scores_i:', scores_i)
+#     else:
+#         raise RuntimeError("You must call ``partial_fit`` before ``predict``.")
 
 
 @njit(
@@ -255,11 +250,9 @@ class AMFClassifier(object):
         random_state=None,
         verbose: bool = True,
     ):
-
         # We will instantiate the numba class when data is passed to
-        # `partial_fit`, since we need to know about `n_features` among others
+        # `partial_fit`, since we need to know about `n_features` among others things
         self.no_python = None
-
         self.n_classes = n_classes
         self._n_features = None
         self.n_estimators = n_estimators
@@ -278,11 +271,8 @@ class AMFClassifier(object):
         self.split_pure = split_pure
         self.n_jobs = n_jobs
         self.reserve_samples = reserve_samples
-
-        # TODO: deal with random_state
         self.random_state = random_state
         self.verbose = verbose
-
         self._classes = set(range(n_classes))
 
         if os.getenv("NUMBA_DISABLE_JIT", None) == "1":
@@ -376,7 +366,6 @@ class AMFClassifier(object):
             ensure_min_features=1,
             estimator="AMFClassifier",
         )
-
         n_samples, n_features = X.shape
         scores = np.zeros((n_samples, self.n_classes), dtype="float32")
         if not self.no_python:
@@ -485,7 +474,6 @@ class AMFClassifier(object):
         tree = self.no_python.trees[idx_tree]
         nodes = tree.nodes
         n_nodes = nodes.n_nodes
-
         index = nodes.index[:n_nodes]
         parent = nodes.parent[:n_nodes]
         left = nodes.left[:n_nodes]

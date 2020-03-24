@@ -9,8 +9,6 @@
 #          Alexandre Gramfort
 #          Nicolas Tresegnie
 #          Sylvain Marie
-
-
 import warnings
 import numbers
 import numpy as np
