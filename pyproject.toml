@@ -17,5 +17,7 @@ streamlit = "^0.49.0"
 tqdm = "^4.36"
 
 [tool.poetry.dev-dependencies]
+coverage = "^4.5"
 pytest = "^5.3"
 pytest-cov = "^2.8"
+python-coveralls = "^2.9"
