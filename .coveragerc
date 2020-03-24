@@ -4,5 +4,15 @@ source = onelearn
 include = */onelearn/*
 
 [report]
+omit =
+    plot_*.py
+    run_*.py
+    playground*.py
+    onelearn/playground*
+    onelearn/experiments*
+    onelearn/datasets*
+    onelearn/plot*
+    onelearn/checks.py
+
 exclude_lines =
     if verbose

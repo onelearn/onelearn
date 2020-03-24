@@ -5,7 +5,7 @@ from math import exp
 
 import numpy as np
 from numba import njit
-from numba.types import float32, boolean, uint32, void
+from .types import float32, boolean, uint32, void
 from numpy.random import uniform
 
 from .node_methods import (
@@ -19,7 +19,7 @@ from .node_methods import (
     node_update_weight_tree,
 )
 from .tree import TreeClassifier
-from .utils import sample_discrete
+from .utils import sample_discrete, get_type
 
 
 # TODO: an overall task is to minimize the O(#n_features) complexity: pass few
@@ -27,7 +27,7 @@ from .utils import sample_discrete
 # TODO: write all the docstrings
 
 
-@njit(uint32(TreeClassifier.class_type.instance_type, uint32))
+@njit(uint32(get_type(TreeClassifier), uint32))
 def tree_go_downwards(tree, idx_sample):
     # We update the nodes along the path which leads to the leaf containing
     # x_t. For each node on the path, we consider the possibility of
@@ -104,7 +104,7 @@ def tree_go_downwards(tree, idx_sample):
                     idx_current_node = node_get_child(tree, idx_current_node, x_t)
 
 
-@njit(void(TreeClassifier.class_type.instance_type, uint32))
+@njit(void(get_type(TreeClassifier), uint32))
 def tree_go_upwards(tree, leaf):
     idx_current_node = leaf
     if tree.iteration >= 1:
@@ -118,7 +118,7 @@ def tree_go_upwards(tree, leaf):
             idx_current_node = tree.nodes.parent[idx_current_node]
 
 
-@njit(void(TreeClassifier.class_type.instance_type, uint32))
+@njit(void(get_type(TreeClassifier), uint32))
 def tree_partial_fit(tree, idx_sample):
     leaf = tree_go_downwards(tree, idx_sample)
     if tree.use_aggregation:
@@ -126,7 +126,7 @@ def tree_partial_fit(tree, idx_sample):
     tree.iteration += 1
 
 
-@njit(uint32(TreeClassifier.class_type.instance_type, float32[::1]))
+@njit(uint32(get_type(TreeClassifier), float32[::1]))
 def tree_get_leaf(tree, x_t):
     # Find the index of the leaf that contains the sample. Start at the root.
     # Index of the root is 0
@@ -144,9 +144,7 @@ def tree_get_leaf(tree, x_t):
     return node
 
 
-@njit(
-    void(TreeClassifier.class_type.instance_type, float32[::1], float32[::1], boolean)
-)
+@njit(void(get_type(TreeClassifier), float32[::1], float32[::1], boolean))
 def tree_predict(tree, x_t, scores, use_aggregation):
     leaf = tree_get_leaf(tree, x_t)
     if not use_aggregation:

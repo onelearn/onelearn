@@ -3,10 +3,11 @@
 
 import numpy as np
 from numba import jitclass
-from numba.types import float32, uint32
+from .types import float32, uint32, get_array_2d_type
+
 
 spec_samples_collection = [
-    ("features", float32[:, ::1]),
+    ("features", get_array_2d_type(float32)),
     ("labels", float32[::1]),
     ("reserve_samples", uint32),
     ("n_samples", uint32),
