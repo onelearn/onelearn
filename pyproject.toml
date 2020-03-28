@@ -1,8 +1,31 @@
 [tool.poetry]
 name = "onelearn"
-version = "0.1.2"
-description = "Machine learning algorithms for online learning"
+version = "0.1.5"
+description = "onelearn is a small python package for online learning"
+readme = "README.md"
 authors = ["Stéphane Gaïffas <stephane.gaiffas@gmail.com>"]
+homepage = "https://onelearn.readthedocs.io"
+documentation = "https://onelearn.readthedocs.io"
+keywords = [
+    "machine-learning",
+    "online-learning-algorithms",
+    "python",
+    "random-forest",
+    "classification",
+    "regression"
+]
+repository = "https://github.com/onelearn/onelearn"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Operating System :: POSIX",
+    "Operating System :: Unix"
+]
 
 [tool.poetry.dependencies]
 bokeh = "^1.3.4"
