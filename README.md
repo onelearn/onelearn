@@ -1,11 +1,13 @@
 
 [![Build Status](https://travis-ci.com/onelearn/onelearn.svg?branch=master)](https://travis-ci.com/onelearn/onelearn)
 [![Documentation Status](https://readthedocs.org/projects/onelearn/badge/?version=latest)](https://onelearn.readthedocs.io/en/latest/?badge=latest)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/onelearn)
+![PyPI - Wheel](https://img.shields.io/pypi/wheel/onelearn)
 [![GitHub stars](https://img.shields.io/github/stars/onelearn/onelearn)](https://github.com/onelearn/onelearn/stargazers)
 [![GitHub issues](https://img.shields.io/github/issues/onelearn/onelearn)](https://github.com/onelearn/onelearn/issues)
 [![GitHub license](https://img.shields.io/github/license/onelearn/onelearn)](https://github.com/onelearn/onelearn/blob/master/LICENSE)
 [![Coverage Status](https://coveralls.io/repos/github/onelearn/onelearn/badge.svg?branch=master)](https://coveralls.io/github/onelearn/onelearn?branch=master)
-	
+
 # `onelearn`: Online learning in Python
 
 [Documentation](https://onelearn.readthedocs.io) | [Reproduce experiments](https://onelearn.readthedocs.io/en/latest/experiments.html) |
