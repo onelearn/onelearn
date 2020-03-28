@@ -1,17 +1,16 @@
 # Authors: Stephane Gaiffas <stephane.gaiffas@gmail.com>
 # License: BSD 3 clause
+import sys
 import logging
 import matplotlib.pyplot as plt
-from matplotlib import gridspec
-
+from tqdm import trange
 from sklearn.datasets import make_moons
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 
-from tqdm import trange
-
+sys.path.extend([".", ".."])
 from onelearn import AMFClassifier
-from onelearn.plot import (
+from experiments.plot import (
     get_mesh,
     plot_contour_binary_classif,
     plot_scatter_binary_classif,
@@ -57,7 +56,6 @@ logging.info("Launching iterations")
 bar = trange(n_plots, desc="Plotting iterations", leave=True)
 
 norm = plt.Normalize(vmin=0.0, vmax=1.0)
-# norm = None
 
 for start, end in zip(save_iterations[:-1], save_iterations[1:]):
     X_iter = X_train[start:end]
@@ -77,3 +75,4 @@ for start, end in zip(save_iterations[:-1], save_iterations[1:]):
 bar.close()
 plt.subplots_adjust(wspace=0, hspace=0)
 plt.savefig("logo.png", transparent=True)
+logging.info("Saved logo in file logo.png")

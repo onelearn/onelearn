@@ -1,5 +1,6 @@
 # Authors: Stephane Gaiffas <stephane.gaiffas@gmail.com>
 # License: BSD 3 clause
+from .plot import plot_scatter_binary_classif, plot_contour_binary_classif, get_mesh
 from .regrets import compute_regrets, plot_regrets
 from .online_vs_batch import compute_regrets_and_batch, plot_online_vs_batch
 from .n_tree_sensitivity import (

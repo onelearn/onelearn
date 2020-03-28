@@ -17,6 +17,8 @@ import onelearn
 from onelearn.datasets import loaders_regrets
 from onelearn import AMFClassifier
 
+from skgarden import MondrianForestClassifier
+
 sys.path.append("/Users/stephanegaiffas/Code/tick")
 
 
@@ -95,6 +97,8 @@ for loader in loaders_regrets:
         step=step,
         verbose=False,
     )
+    mfc = MondrianForestClassifier(n_estimators=n_estimators, random_state=random_state)
+
     logging.info("Fitting AMF...")
     t1 = time()
     amf.partial_fit(X_train, y_train)
@@ -107,6 +111,12 @@ for loader in loaders_regrets:
     t2 = time()
     logging.info("Done. time fit OFC:" + "%.2f" % (t2 - t1) + " seconds")
 
+    logging.info("Fitting MFC...")
+    t1 = time()
+    mfc.partial_fit(X_train, y_train)
+    t2 = time()
+    logging.info("Done. time fit MFC:" + "%.2f" % (t2 - t1) + " seconds")
+
     logging.info("Prediction with AMF...")
     t1 = time()
     y_pred = amf.predict_proba(X_test)
@@ -118,3 +128,9 @@ for loader in loaders_regrets:
     y_pred = ofc.predict_proba(X_test)
     t2 = time()
     logging.info("Done. time predict OFC:" + "%.2f" % (t2 - t1) + " seconds")
+
+    logging.info("Prediction with MFC...")
+    t1 = time()
+    y_pred = mfc.predict_proba(X_test)
+    t2 = time()
+    logging.info("Done. time predict MFC:" + "%.2f" % (t2 - t1) + " seconds")

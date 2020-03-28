@@ -1,9 +1,13 @@
-from sklearn.datasets import make_moons
-from onelearn import AMFClassifier
+# Authors: Stephane Gaiffas <stephane.gaiffas@gmail.com>
+# License: BSD 3 clause
+import sys
 import logging
 import matplotlib.pyplot as plt
+from sklearn.datasets import make_moons
 
-from onelearn.plot import (
+sys.path.extend([".", ".."])
+from onelearn import AMFClassifier
+from experiments.plot import (
     plot_contour_binary_classif,
     plot_scatter_binary_classif,
     get_mesh,

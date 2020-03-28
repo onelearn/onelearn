@@ -38,7 +38,7 @@ def compute_aucs_n_trees(X, y, random_state=42):
     return test_aucs
 
 
-def read_data_n_trees(path, filenames):
+def read_data_n_trees(filenames):
     n_treess = [1, 2, 5, 10, 20, 50]
     col_clf = []
     col_n_trees = []
@@ -46,7 +46,7 @@ def read_data_n_trees(path, filenames):
     col_dataset = []
     col_x_pos = []
     for filename in filenames:
-        filename_pkl = os.path.join(path, filename)
+        filename_pkl = os.path.join(filename)
         p = Path(filename_pkl)
         with open(p, "rb") as f:
             results = pkl.load(f)

@@ -1,16 +1,18 @@
+# Authors: Stephane Gaiffas <stephane.gaiffas@gmail.com>
+# License: BSD 3 clause
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
-
 from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier
 from sklearn.datasets import make_moons, make_classification, make_circles
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
-
 from skgarden import MondrianForestClassifier
 
+sys.path.extend([".", ".."])
 from onelearn import AMFClassifier
-from onelearn.plot import (
+from experiments import (
     get_mesh,
     plot_contour_binary_classif,
     plot_scatter_binary_classif,
