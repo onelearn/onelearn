@@ -11,6 +11,10 @@ This is ``onelearn``'s documentation
 .. image:: https://readthedocs.org/projects/onelearn/badge/?version=latest
    :target: https://onelearn.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
+.. image:: https://img.shields.io/pypi/pyversions/onelearn
+   :alt: PyPI - Python Version
+.. image:: https://img.shields.io/pypi/wheel/onelearn
+   :alt: PyPI - Wheel
 .. image:: https://img.shields.io/github/stars/onelearn/onelearn
    :alt: GitHub stars
    :target: https://github.com/onelearn/onelearn/stargazers
