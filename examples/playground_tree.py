@@ -2,18 +2,18 @@
 # License: BSD 3 clause
 
 # streamlit run playground_decision.py
-
+import sys
 import numpy as np
 import pandas as pd
 import streamlit as st
-
 from sklearn.datasets import make_moons
 from sklearn.preprocessing import MinMaxScaler
-from onelearn import AMFClassifier
-
 from bokeh.models import ColumnDataSource, HoverTool
 from bokeh.plotting import figure
 import colorcet as cc
+
+sys.path.extend([".", ".."])
+from onelearn import AMFClassifier
 
 
 n_samples = 100

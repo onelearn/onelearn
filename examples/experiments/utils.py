@@ -1,5 +1,6 @@
 # Authors: Stephane Gaiffas <stephane.gaiffas@gmail.com>
 # License: BSD 3 clause
+import sys
 import logging
 from itertools import product
 import numpy as np
@@ -7,7 +8,9 @@ import pandas as pd
 from sklearn.linear_model import SGDClassifier
 from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier
 from skgarden import MondrianForestClassifier
-from .. import AMFClassifier, OnlineDummyClassifier
+
+sys.path.append("..")
+from onelearn import AMFClassifier, OnlineDummyClassifier
 
 
 classifier_colors = {
@@ -214,7 +217,7 @@ def get_classifiers_n_trees_comparison(n_classes, random_state=42):
     use_aggregations = [True]
     n_estimatorss = [1, 2, 5, 10, 20, 50]
     split_pures = [False]
-    dirichlets = [None, 0.1]
+    dirichlets = [None]
     for (n_estimators, use_aggregation, split_pure, dirichlet) in product(
         n_estimatorss, use_aggregations, split_pures, dirichlets
     ):

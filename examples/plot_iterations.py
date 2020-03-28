@@ -1,16 +1,16 @@
 # Authors: Stephane Gaiffas <stephane.gaiffas@gmail.com>
 # License: BSD 3 clause
+import sys
 import logging
 import matplotlib.pyplot as plt
-
+from tqdm import trange
 from sklearn.datasets import make_moons
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 
-from tqdm import trange
-
+sys.path.extend([".", ".."])
 from onelearn import AMFClassifier
-from onelearn.plot import (
+from experiments.plot import (
     get_mesh,
     plot_contour_binary_classif,
     plot_scatter_binary_classif,

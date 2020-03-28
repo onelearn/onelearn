@@ -1,17 +1,20 @@
 # Authors: Stephane Gaiffas <stephane.gaiffas@gmail.com>
 # License: BSD 3 clause
 import os
+import sys
 from datetime import datetime
 import logging
 import warnings
 import pickle as pkl
-import onelearn
-from onelearn.experiments import (
+
+sys.path.extend([".", ".."])
+from experiments import (
     print_datasets,
     compute_aucs_n_trees,
     read_data_n_trees,
     plot_comparison_n_trees,
 )
+import onelearn
 from onelearn.datasets import loaders_online_vs_batch
 
 
@@ -41,6 +44,6 @@ if __name__ == "__main__":
             logging.info("Saved results in %s" % filename)
         filenames.append(filename)
 
-    df = read_data_n_trees(path, filenames)
+    df = read_data_n_trees(filenames)
     filename_pdf = os.path.join(path, "comparison_n_trees.pdf")
     plot_comparison_n_trees(df, filename=filename_pdf, legend=True)

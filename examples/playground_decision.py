@@ -3,12 +3,10 @@
 
 # Run the following:
 # streamlit run playground_decision.py
-
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
-
 import streamlit as st
-
 from sklearn.datasets import (
     make_moons,
     make_circles,
@@ -17,8 +15,9 @@ from sklearn.datasets import (
 )
 from sklearn.preprocessing import MinMaxScaler
 
+sys.path.extend([".", ".."])
 from onelearn import AMFClassifier
-from onelearn.plot import (
+from experiments.plot import (
     get_mesh,
     plot_contour_binary_classif,
     plot_scatter_binary_classif,

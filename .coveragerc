@@ -5,13 +5,9 @@ include = */onelearn/*
 
 [report]
 omit =
-    plot_*.py
-    run_*.py
-    playground*.py
+    examples/*
     onelearn/playground*
-    onelearn/experiments*
     onelearn/datasets*
-    onelearn/plot*
     onelearn/checks.py
 
 exclude_lines =
