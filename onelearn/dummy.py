@@ -5,29 +5,35 @@ import numpy as np
 
 class OnlineDummyClassifier(object):
     """A dummy online classifier only using past frequencies of the labels.
+    Namely, predictions don't use the features and simply compute
 
-    Parameters
-    ----------
-    n_classes : `int`
-        Number of excepted classes in the labels. This is required since we
-        don't know the number of classes in advance in a online setting.
+        (count + dirichlet) / (n_samples + dirichlet * n_classes)
+    
+    for each class, where count is the count for the class, and where ``dirichlet`` is a
+    "smoothing" parameter. This is simply a regularized class frequency with a
+    dirichlet prior with ``dirichlet`` parameter
 
-    dirichlet : `float` or `None`, optional (default=None)
-        Each node in a tree predicts according to the distribution of the labels
-        it contains. This distribution is regularized using a "Jeffreys" prior
-        with parameter `dirichlet`. For each class with `count` labels in the
-        node and `n_samples` samples in it, the prediction of a node is given by
-        (count + dirichlet) / (n_samples + dirichlet * n_classes).
+    Note
+    ----
+    This class cannot produce serious predictions, and must only be used as a dummy
+    baseline.
 
-        Default is dirichlet=0.5 for n_classes=2 and dirichlet=0.01 otherwise.
-
-    Attributes
-    ----------
-    iteration : `int`
-        Number of iterations performed
     """
 
-    def __init__(self, n_classes, dirichlet=0.5):
+    def __init__(self, n_classes, dirichlet=None):
+        """Instantiates a `OnlineDummyClassifier` instance.
+
+        Parameters
+        ----------
+        n_classes : :obj:`int`
+            Number of expected classes in the labels. This is required since we
+            don't know the number of classes in advance in a online setting.
+
+        dirichlet : :obj:`float` or :obj:`None`, default = `None`
+            Regularization level of the class frequencies used for predictions in each
+            node. Default is dirichlet=0.5 for n_classes=2 and dirichlet=0.01 otherwise.
+
+        """
         self.iteration = 0
         self.n_classes = n_classes
         self._classes = set(range(n_classes))
@@ -40,7 +46,26 @@ class OnlineDummyClassifier(object):
             self.dirichlet = dirichlet
         self.counts = np.zeros((n_classes,), dtype=np.uint32)
 
-    def partial_fit(self, _, y, classes=None):
+    def partial_fit(self, X, y, classes=None):
+        """Updates the classifier with the given batch of samples.
+
+        Parameters
+        ----------
+        X : :obj:`np.ndarray` or :obj:`scipy.sparse.csr_matrix`, shape=(n_samples, n_features)
+            Input features matrix.
+
+        y : :obj:`np.ndarray`
+            Input labels vector.
+
+        classes : :obj:`None`
+            Must not be used, only here for backwards compatibility
+
+        Returns
+        -------
+        output : :obj:`OnlineDummyClassifier`
+            Updated instance of `OnlineDummyClassifier`
+
+        """
         if y.min() < 0:
             raise ValueError("All the values in `y` must be non-negative")
         y_max = y.max()
@@ -53,17 +78,18 @@ class OnlineDummyClassifier(object):
         return self
 
     def predict_proba(self, X):
-        """Predict the class probabilities class for the given features
+        """Predicts the class probabilities for the given features vectors
 
         Parameters
         ----------
-        X : `np.ndarray` or `scipy.sparse.csr_matrix`, shape=(n_samples, n_features)
-            Features matrix to predict for.
+        X : :obj:`np.ndarray` or :obj:`scipy.sparse.csr_matrix`, shape=(n_samples, n_features)
+            Input features matrix to predict for.
 
         Returns
         -------
-        output : `np.ndarray`, shape=(n_samples, n_classes)
-            Returns the predicted class probabilities
+        output : :obj:`np.ndarray`, shape=(n_samples, n_classes)
+            Returns the predicted class probabilities for the input features
+
         """
         if self.iteration == 0:
             raise RuntimeError(
@@ -79,11 +105,25 @@ class OnlineDummyClassifier(object):
         return probas
 
     def predict(self, X):
+        """Predicts the labels for the given features vectors
+
+        Parameters
+        ----------
+        X : :obj:`np.ndarray` or :obj:`scipy.sparse.csr_matrix`, shape=(n_samples, n_features)
+            Input features matrix to predict for.
+
+        Returns
+        -------
+        output : :obj:`np.ndarray`, shape=(n_samples,)
+            Returns the predicted labels for the input features
+
+        """
         scores = self.predict_proba(X)
         return scores.argmax(axis=1)
 
     @property
     def n_classes(self):
+        """:obj:`int`: Number of expected classes in the labels."""
         return self._n_classes
 
     @n_classes.setter
@@ -102,6 +142,8 @@ class OnlineDummyClassifier(object):
 
     @property
     def dirichlet(self):
+        """:obj:`float` or :obj:`None`: Regularization level of the class
+        frequencies."""
         return self._dirichlet
 
     @dirichlet.setter

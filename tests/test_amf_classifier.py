@@ -195,7 +195,7 @@ class TestAMFClassifier(object):
             repr(amf) == "AMFClassifier(n_classes=3, n_estimators=10, "
             "step=1.0, loss=log, use_aggregation=True, "
             "dirichlet=0.01, split_pure=False, n_jobs=1, "
-            "random_state=None, verbose=True)"
+            "random_state=None, verbose=False)"
         )
 
         amf.n_estimators = 42
@@ -203,7 +203,7 @@ class TestAMFClassifier(object):
             repr(amf) == "AMFClassifier(n_classes=3, n_estimators=42, "
             "step=1.0, loss=log, use_aggregation=True, "
             "dirichlet=0.01, split_pure=False, n_jobs=1, "
-            "random_state=None, verbose=True)"
+            "random_state=None, verbose=False)"
         )
 
         amf.verbose = False
