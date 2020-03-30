@@ -1,7 +1,3 @@
-.. onelearn documentation master file, created by
-   sphinx-quickstart on Sat Mar 21 22:37:09 2020.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
 
 This is ``onelearn``'s documentation
 ====================================
@@ -28,8 +24,7 @@ This is ``onelearn``'s documentation
    :target: https://coveralls.io/github/onelearn/onelearn?branch=master
 
 
-
-``onelearn`` stands for ONE-shot LEARNning. It is a small python package for **online learning** with ``Python``.
+onelearn stands for ONE-shot LEARNning. It is a small python package for **online learning** with Python.
 It provides :
 
    * **online** (or **one-shot**) learning algorithms: each sample is processed **once**, only a
@@ -40,8 +35,8 @@ It provides :
 Usage
 -----
 
-``onelearn`` follows the ``scikit-learn`` API: you call ``fit`` instead ``partial_fit`` each
-time a new bunch of data is available and use ``predict_proba`` or ``predict`` whenever you
+onelearn follows the scikit-learn API: you call fit instead of partial_fit each
+time a new bunch of data is available and use predict_proba or predict whenever you
 need predictions.
 
 .. code-block:: python
@@ -52,14 +47,14 @@ need predictions.
    clf.partial_fit(X_train, y_train)
    y_pred = clf.predict_proba(X_test)[:, 1]
 
-Each time you call ``partial_fit`` the algorithm updates its decision function using the
+Each time you call partial_fit the algorithm updates its decision function using the
 new data as illustrated in the next figure.
 
 .. image:: images/iterations.pdf
 
 Installation
 ------------
-The easiest way to install ``onelearn`` is using ``pip`` :
+The easiest way to install onelearn is using pip :
 
 .. code-block:: bash
 
