@@ -20,8 +20,9 @@ Also, a baseline dummy classifier is provided by :obj:`OnlineDummyClassifier`, s
 .. autosummary::
    :toctree: generated/
 
-    onelearn.AMFClassifier
-    onelearn.OnlineDummyClassifier
+   onelearn.AMFClassifier
+   onelearn.OnlineDummyClassifier
+
 
 About :obj:`AMFClassifier`
 --------------------------

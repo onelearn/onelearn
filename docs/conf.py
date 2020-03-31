@@ -12,8 +12,12 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath(".."))
+sys.path.insert(0, os.path.abspath("."))
+sys.path.insert(0, os.path.abspath("../"))
+sys.path.insert(0, os.path.abspath("../.."))
 sys.path.insert(0, os.path.abspath("sphinx_ext"))
+
+from onelearn import *
 
 from github_link import make_linkcode_resolve
 
@@ -32,6 +36,7 @@ release = "0.1.5"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
     "sphinx.ext.todo",
@@ -42,7 +47,7 @@ extensions = [
 ]
 
 autosummary_generate = True
-autodoc_default_options = {"members": True, "inherited-members": True}
+autodoc_default_options = {"members": None, "inherited-members": None}
 
 
 sphinx_gallery_conf = {
