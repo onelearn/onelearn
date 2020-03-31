@@ -1,6 +1,6 @@
 
-Running experiments from the paper
-==================================
+Experiments
+===========
 
 This page explains how you can reproduce all the experiments from the paper
 
@@ -23,21 +23,21 @@ with the Mondrian forests algorithm. This can be done as follows:
         python setup.py build install
 
 in order to get the last version. All the scripts used to produce the figures from the paper
-are available in the root of ``onelearn`` repository. Clone the repository using
+are available in the ``examples`` folder of the ``onelearn`` repository.
+Clone the repository using
 
 .. code-block:: bash
 
     git clone https://github.com/onelearn/onelearn.git
 
-and go to the ``onelearn`` folder. Now, running the following scripts using ``python`` allows to reproduce all the
+and go to the ``onelearn`` folder. Now, running the following scripts allows to reproduce all the
 figures from the paper :
 
-* ``plot_iterations.py``
-* ``plot_decisions.py``
-* ``plot_forest_effect.py``
-* ``run_regrets_experiments.py``
-* ``run_online_vs_batch.py``
-* ``run_n_trees_sensitivity.py``
+* ``python examples/plot_iterations.py``
+* ``python examples/plot_decisions.py``
+* ``python examples/plot_forest_effect.py``
+* ``python examples/run_regrets_experiments.py``
+* ``python examples/run_online_vs_batch.py``
+* ``python examples/run_n_trees_sensitivity.py``
 
 Note that the ``run_*`` scripts can take a while to run, in particular ``run_regrets_experiments.py``.
-All the produced figures are saved in the same directory.

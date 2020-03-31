@@ -80,3 +80,4 @@ browse through the module reference using the left navigation bar.
    classification
    regression
    experiments
+   playground

@@ -162,78 +162,36 @@ def predict_proba_tree(forest, idx_tree, X):
 
 class AMFClassifier(object):
     """Aggregated Mondrian Forest classifier for online learning. This algorithm
-    is truly online, in the sense that a single pass is performed, and one can
-    ask for predictions anytime.
+    is truly online, in the sense that a single pass is performed, and that predictions
+    can be produced anytime.
 
-    Parameters
-    ----------
-    n_classes : `int`
-        Number of excepted classes in the labels. This is required since we
-        don't know the number of classes in advance in a online setting.
+    Each node in a tree predicts according to the distribution of the labels
+    it contains. This distribution is regularized using a "Jeffreys" prior
+    with parameter ``dirichlet``. For each class with `count` labels in the
+    node and `n_samples` samples in it, the prediction of a node is given by
 
-    n_estimators : `int`, optional (default=10)
-        Number of trees to grow in the forest.
+        (count + dirichlet) / (n_samples + dirichlet * n_classes)
 
-    step : `float`, optional (default=1)
-        Step-size for the aggregation weights. Default is 1 for classification,
-        which is typically the best choice.
+    The prediction for a sample is computed as the aggregated predictions of all the
+    subtrees along the path leading to the leaf node containing the sample. The
+    aggregation weights are exponential weights with learning rate ``step`` and loss
+    ``loss`` when ``use_aggregation`` is ``True``.
 
-    loss : 'str', optional (default='log')
-        The loss used for the computation of the aggregation weights. Only `log`
-        is supported for now, namely the log-loss for multi-class
-        classification.
+    This computation is performed exactly thanks to a context tree weighting algorithm.
+    More details can be found in the paper cited in references below.
 
-    use_aggregation : `bool`, optional (default=True)
-        Whether to use aggregation in each tree. It is highly recommended to
-        leave it as `True`.
+    The final predictions are the average class probabilities predicted by each of the
+    ``n_estimators`` trees in the forest.
 
-    dirichlet : `float` or `None`, optional (default=None)
-        Each node in a tree predicts according to the distribution of the labels
-        it contains. This distribution is regularized using a "Jeffreys" prior
-        with parameter `dirichlet`. For each class with `count` labels in the
-        node and `n_samples` samples in it, the prediction of a node is given by
-        (count + dirichlet) / (n_samples + dirichlet * n_classes).
-
-        Default is dirichlet=0.5 for n_classes=2 and dirichlet=0.01 otherwise.
-
-    split_pure : `bool`, optional (default=False)
-        Whether we split nodes that contain only one class of labels. Default is
-        False.
-
-    n_jobs : `int`, optional (default=1)
-        The number of threads used to grow the tree in parallel. This has no
-        effect for now, the default is n_jobs=1, namely single-threaded.
-
-    reserve_samples : `int`, optional (default=1024)
-        Each time extra memory is required for new samples and new nodes, pre-allocate
-        what is required for `reserve_samples` in advance.
-
-    random_state : `int` or `None`, optional (default=None)
-        Controls the randomness involved in the trees growing, which is a highly
-        randomized process.
-
-    verbose : `bool`, optional (default=True)
-        Whether a bar showing progress for `partial_fit`, `predict_proba` and
-        `predict` should be used.
-
-    Attributes
-    ----------
-    n_classes = `int`
-        Number of excepted classes in the labels.
-
-    n_features : `int`
-        The number of features from the training dataset (passed to ``fit``)
-
-    # TODO: add missing attributes
-
-    Notes
-    -----
-    Note that all the parameters of AMFClassifier become read-only after the
-    first call to `partial_fit`
+    Note
+    ----
+    All the parameters of ``AMFClassifier`` become **read-only** after the first call
+    to ``partial_fit``
 
     References
     ----------
-    TODO : add the reference of the paper
+    J. Mourtada, S. Gaiffas and E. Scornet, *AMF: Aggregated Mondrian Forests for Online Learning*, arXiv:1906.10529, 2019
+
     """
 
     def __init__(
@@ -248,8 +206,59 @@ class AMFClassifier(object):
         n_jobs=1,
         reserve_samples=1024,
         random_state=None,
-        verbose: bool = True,
+        verbose=False,
     ):
+        """Instantiates a `AMFClassifier` instance.
+
+        Parameters
+        ----------
+        n_classes : :obj:`int`
+            Number of expected classes in the labels. This is required since we
+            don't know the number of classes in advance in a online setting.
+
+        n_estimators : :obj:`int`, default = 10
+            The number of trees in the forest.
+
+        step : :obj:`float`, default = 1
+            Step-size for the aggregation weights. Default is 1 for classification with
+            the log-loss, which is usually the best choice.
+
+        loss : {"log"}, default = "log"
+            The loss used for the computation of the aggregation weights. Only "log"
+            is supported for now, namely the log-loss for multi-class
+            classification.
+
+        use_aggregation : :obj:`bool`, default = `True`
+            Controls if aggregation is used in the trees. It is highly recommended to
+            leave it as `True`.
+
+        dirichlet : :obj:`float` or :obj:`None`, default = `None`
+            Regularization level of the class frequencies used for predictions in each
+            node. Default is dirichlet=0.5 for n_classes=2 and dirichlet=0.01 otherwise.
+
+        split_pure : :obj:`bool`, default = `False`
+            Controls if nodes that contains only sample of the same class should be
+            split ("pure" nodes). Default is `False`, namely pure nodes are not split,
+            but `True` can be sometimes better.
+
+        n_jobs : :obj:`int`, default = 1
+            Sets the number of threads used to grow the tree in parallel. The default is
+            n_jobs=1, namely single-threaded. Fow now, this parameter has no effect and
+            only a single thread can be used.
+
+        reserve_samples : :obj:`int`, default = 1024
+            Sets the amount of memory which is pre-allocated each time extra memory is
+            required for new samples and new nodes. Decreasing it can slow down
+            training. If you know that each ``partial_fit`` will be called with
+            approximately `n` samples, you can set reserve_samples = `n` if `n` is
+            large (> 1024).
+
+        random_state : :obj:`int` or :obj:`None`, default = `None`
+            Controls the randomness involved in the trees.
+
+        verbose : :obj:`bool`, default = `False`
+            Controls the verbosity when fitting and predicting.
+        """
         # We will instantiate the numba class when data is passed to
         # `partial_fit`, since we need to know about `n_features` among others things
         self.no_python = None
@@ -281,7 +290,25 @@ class AMFClassifier(object):
             self._using_numba = True
 
     def partial_fit(self, X, y, classes=None):
-        # TODO: write the docstring
+        """Updates the classifier with the given batch of samples.
+
+        Parameters
+        ----------
+        X : :obj:`np.ndarray`, shape=(n_samples, n_features)
+            Input features matrix.
+
+        y : :obj:`np.ndarray`
+            Input labels vector.
+
+        classes : :obj:`None`
+            Must not be used, only here for backwards compatibility
+
+        Returns
+        -------
+        output : :obj:`AMFClassifier`
+            Updated instance of :obj:`AMFClassifier`
+
+        """
         # First,ensure that X and y are C-contiguous and with float32 dtype
         X, y = check_X_y(
             X,
@@ -338,17 +365,18 @@ class AMFClassifier(object):
         return self
 
     def predict_proba(self, X):
-        """Predict class for given samples
+        """Predicts the class probabilities for the given features vectors
 
         Parameters
         ----------
-        X : `np.ndarray`, shape=(n_samples, n_features)
-            Features matrix to predict for
+        X : :obj:`np.ndarray`, shape=(n_samples, n_features)
+            Input features matrix to predict for.
 
         Returns
         -------
-        output : `np.ndarray`, shape=(n_samples, n_classes)
-            Returns the predicted class probabilities
+        output : :obj:`np.ndarray`, shape=(n_samples, n_classes)
+            Returns the predicted class probabilities for the input features
+
         """
         import numpy as np
 
@@ -384,21 +412,23 @@ class AMFClassifier(object):
         return scores
 
     def predict_proba_tree(self, X, tree):
-        """Predict class for given samples using a single tree. Mainly useful  for
-        debugging or visualisation purposes
-
+        """Predicts the class probabilities for the given features vectors using a
+        single tree at given index ``tree``. Should be used only for debugging or
+        visualisation purposes.
+        
         Parameters
         ----------
-        X : `np.ndarray`, shape=(n_samples, n_features)
-            Features matrix to predict for
+        X : :obj:`np.ndarray`, shape=(n_samples, n_features)
+            Input features matrix to predict for.
 
-        tree : `int`
-            Number of the tree, must be between 0 and `n_estimators` - 1
+        tree : :obj:`int`
+            Index of the tree, must be between 0 and ``n_estimators`` - 1
 
         Returns
         -------
-        output : `np.ndarray`, shape=(n_samples, n_classes)
-            Returns the predicted class probabilities
+        output : :obj:`np.ndarray`, shape=(n_samples, n_classes)
+            Returns the predicted class probabilities for the input features
+
         """
         # TODO: unittests for this method
         if not self.no_python:
@@ -531,6 +561,7 @@ class AMFClassifier(object):
 
     @property
     def n_classes(self):
+        """:obj:`int`: Number of expected classes in the labels."""
         return self._n_classes
 
     @n_classes.setter
@@ -549,6 +580,7 @@ class AMFClassifier(object):
 
     @property
     def n_features(self):
+        """:obj:`int`: Number of features used during training."""
         return self._n_features
 
     @n_features.setter
@@ -557,6 +589,7 @@ class AMFClassifier(object):
 
     @property
     def n_estimators(self):
+        """:obj:`int`: Number of trees in the forest."""
         return self._n_estimators
 
     @n_estimators.setter
@@ -575,6 +608,7 @@ class AMFClassifier(object):
 
     @property
     def n_jobs(self):
+        """:obj:`int`: Number of expected classes in the labels."""
         return self._n_jobs
 
     @n_jobs.setter
@@ -591,6 +625,8 @@ class AMFClassifier(object):
 
     @property
     def reserve_samples(self):
+        """:obj:`int`: Amount of memory pre-allocated each time extra memory is
+        required."""
         return self._reserve_samples
 
     @reserve_samples.setter
@@ -609,6 +645,7 @@ class AMFClassifier(object):
 
     @property
     def step(self):
+        """:obj:`float`: Step-size for the aggregation weights."""
         return self._step
 
     @step.setter
@@ -625,6 +662,7 @@ class AMFClassifier(object):
 
     @property
     def use_aggregation(self):
+        """:obj:`bool`: Controls if aggregation is used in the trees."""
         return self._use_aggregation
 
     @use_aggregation.setter
@@ -641,6 +679,8 @@ class AMFClassifier(object):
 
     @property
     def dirichlet(self):
+        """:obj:`float` or :obj:`None`: Regularization level of the class
+        frequencies."""
         return self._dirichlet
 
     @dirichlet.setter
@@ -659,6 +699,8 @@ class AMFClassifier(object):
 
     @property
     def split_pure(self):
+        """:obj:`bool`: Controls if nodes that contains only sample of the same class
+        should be split."""
         return self._split_pure
 
     @split_pure.setter
@@ -675,6 +717,7 @@ class AMFClassifier(object):
 
     @property
     def verbose(self):
+        """:obj:`bool`: Controls the verbosity when fitting and predicting."""
         return self._verbose
 
     @verbose.setter
@@ -689,6 +732,7 @@ class AMFClassifier(object):
 
     @property
     def loss(self):
+        """:obj:`str`: The loss used for the computation of the aggregation weights."""
         return "log"
 
     @loss.setter
@@ -697,6 +741,7 @@ class AMFClassifier(object):
 
     @property
     def random_state(self):
+        """:obj:`int` or :obj:`None`: Controls the randomness involved in the trees."""
         if self._random_state == -1:
             return None
         else:

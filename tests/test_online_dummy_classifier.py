@@ -36,8 +36,7 @@ class TestOnlineDummyClassifier(object):
 
     def test_repr(self):
         dummy = OnlineDummyClassifier(n_classes=3)
-        print(repr(dummy))
-        assert repr(dummy) == "OnlineDummyClassifier(n_classes=3, dirichlet=0.5)"
+        assert repr(dummy) == "OnlineDummyClassifier(n_classes=3, dirichlet=0.01)"
 
     def test_partial_fit(self):
         clf = OnlineDummyClassifier(n_classes=2)
