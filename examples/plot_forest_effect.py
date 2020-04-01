@@ -1,9 +1,21 @@
 # Authors: Stephane Gaiffas <stephane.gaiffas@gmail.com>
 # License: BSD 3 clause
+"""
+Illustration of the forest effect
+=================================
+
+In this example we show that the decision function of a forest is the average of
+independent trees, and that averaging allows to produce smooth decision functions.
+"""
 import sys
+import warnings
+
+warnings.filterwarnings("ignore")
+
 import logging
 import matplotlib.pyplot as plt
 from sklearn.datasets import make_moons
+
 
 sys.path.extend([".", ".."])
 from onelearn import AMFClassifier
@@ -12,6 +24,7 @@ from experiments.plot import (
     plot_scatter_binary_classif,
     get_mesh,
 )
+
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%Y-%m-%d %H:%M:%S"

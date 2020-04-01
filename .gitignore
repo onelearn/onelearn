@@ -6,7 +6,9 @@ docs/_build/
 docs/generated/
 *.pdf
 *.pkl
-
+docs/auto_examples/
+docs/modules/
+*.png
 .DS_Store
 .idea/
 

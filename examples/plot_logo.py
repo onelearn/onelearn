@@ -1,5 +1,11 @@
 # Authors: Stephane Gaiffas <stephane.gaiffas@gmail.com>
 # License: BSD 3 clause
+"""
+Logo example
+============
+
+This is a small example that produces the logo of the ``onelearn`` library.
+"""
 import sys
 import logging
 import matplotlib.pyplot as plt

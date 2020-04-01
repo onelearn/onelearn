@@ -81,3 +81,4 @@ browse through the module reference using the left navigation bar.
    regression
    experiments
    playground
+   auto_examples/index
