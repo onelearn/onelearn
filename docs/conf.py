@@ -44,6 +44,7 @@ extensions = [
     "sphinx.ext.ifconfig",
     "sphinx.ext.mathjax",
     "sphinx.ext.linkcode",
+    "sphinx_gallery.gen_gallery",
 ]
 
 autosummary_generate = True
@@ -51,13 +52,12 @@ autodoc_default_options = {"members": None, "inherited-members": None}
 
 
 sphinx_gallery_conf = {
-    # path to your examples scripts
     "examples_dirs": "../examples",
     "doc_module": "onelearn",
-    # path where to save gallery generated examples
     "gallery_dirs": "auto_examples",
+    "ignore_pattern": "../run_*|../playground_*",
     "backreferences_dir": os.path.join("modules", "generated"),
-    "show_memory": True,
+    "show_memory": False,
     "reference_url": {"onelearn": None},
 }
 

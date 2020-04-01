@@ -8,22 +8,21 @@
 [![GitHub license](https://img.shields.io/github/license/onelearn/onelearn)](https://github.com/onelearn/onelearn/blob/master/LICENSE)
 [![Coverage Status](https://coveralls.io/repos/github/onelearn/onelearn/badge.svg?branch=master)](https://coveralls.io/github/onelearn/onelearn?branch=master)
 
-# `onelearn`: Online learning in Python
+# onelearn: Online learning in Python
 
 [Documentation](https://onelearn.readthedocs.io) | [Reproduce experiments](https://onelearn.readthedocs.io/en/latest/experiments.html) |
 
-`onelearn` stands for ONE-shot LEARNning. It is a small python package for **online learning** with ``Python``.
-It provides :
+onelearn stands for ONE-shot LEARNning. It is a small python package for **online learning** 
+with Python. It provides :
 
 - **online** (or **one-shot**) learning algorithms: each sample is processed **once**, only a 
   single pass is performed on the data
 - including **multi-class classification** and regression algorithms
 - For now, only *ensemble* methods, namely **Random Forests**
 
-
 ## Installation
 
-The easiest way to install ``onelearn`` is using ``pip``
+The easiest way to install onelearn is using pip
 
     pip install onelearn
 

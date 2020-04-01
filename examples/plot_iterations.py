@@ -1,5 +1,12 @@
 # Authors: Stephane Gaiffas <stephane.gaiffas@gmail.com>
 # License: BSD 3 clause
+"""
+Plot iterations of AMFClassifier
+================================
+
+In this examples we illustrate the evolution of the decision function produced by
+:obj:`AMFClassifier` along iterations (repeated calls to ``partial_fit``).
+"""
 import sys
 import logging
 import matplotlib.pyplot as plt

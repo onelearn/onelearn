@@ -1,5 +1,12 @@
 # Authors: Stephane Gaiffas <stephane.gaiffas@gmail.com>
 # License: BSD 3 clause
+"""
+Comparisons of decision functions
+=================================
+
+This example allows to compare the decision functions of several random forest types
+of estimators.
+"""
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
