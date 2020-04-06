@@ -14,3 +14,5 @@ from .loaders import (
     loaders_regrets,
     loaders_online_vs_batch,
 )
+
+from .regression import get_signal, make_regression

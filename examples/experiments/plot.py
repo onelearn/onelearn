@@ -29,6 +29,7 @@ def plot_scatter_binary_classif(
     fontsize=None,
     lw=None,
     norm=None,
+    noaxes=False,
 ):
     if cm is None:
         cm = plt.get_cmap("RdBu")
@@ -42,6 +43,8 @@ def plot_scatter_binary_classif(
     ax.set_yticks(())
     ax.set_xticklabels([])
     ax.set_yticklabels([])
+    if noaxes:
+        ax.axis("off")
 
 
 def plot_contour_binary_classif(
@@ -63,6 +66,6 @@ def plot_contour_binary_classif(
             xx.max() - 0.3,
             yy.min() + 0.3,
             ("%.2f" % score).lstrip("0"),
-            size=15,
+            size=25,
             horizontalalignment="right",
         )

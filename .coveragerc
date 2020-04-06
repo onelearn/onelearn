@@ -12,3 +12,4 @@ omit =
 
 exclude_lines =
     if verbose
+    self._using_numba = True

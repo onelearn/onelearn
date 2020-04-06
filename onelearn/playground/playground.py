@@ -7,7 +7,7 @@ def run_playground_decision():
     import onelearn
 
     filename = onelearn.__file__.replace(
-        "/onelearn/__init__.py", "/examples/playground_decision.py"
+        "/onelearn/__init__.py", "/examples/playground_classification.py"
     )
     os.system("streamlit run %s" % filename)
 

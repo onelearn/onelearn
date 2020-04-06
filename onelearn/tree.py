@@ -5,23 +5,36 @@ import numpy as np
 from numba import jitclass
 from .types import float32, boolean, uint32, string
 
-from .node_collection import NodeCollection, add_node
+from .node_collection import (
+    NodesClassifier,
+    NodesRegressor,
+    add_node_classifier,
+    add_node_regressor,
+)
 from .sample import SamplesCollection
 from .utils import get_type
 
-spec_tree_classifier = [
-    ("n_classes", uint32),
+spec_tree = [
     ("n_features", uint32),
     ("step", float32),
     ("loss", string),
     ("use_aggregation", boolean),
-    ("dirichlet", float32),
     ("split_pure", boolean),
     ("samples", get_type(SamplesCollection)),
-    ("nodes", get_type(NodeCollection)),
     ("intensities", float32[::1]),
     ("iteration", uint32),
 ]
+
+spec_tree_classifier = spec_tree + [
+    ("n_classes", uint32),
+    ("dirichlet", float32),
+    ("nodes", get_type(NodesClassifier)),
+]
+
+spec_tree_regressor = spec_tree + [
+    ("nodes", get_type(NodesRegressor)),
+]
+
 
 # TODO: write all the docstrings
 
@@ -47,16 +60,26 @@ class TreeClassifier(object):
         self.dirichlet = dirichlet
         self.split_pure = split_pure
         self.samples = samples
-
-        # TODO: something more clever than this ?
-        # default_reserve = 512
-        # self.nodes = NodeCollection(n_features, n_classes, default_reserve)
         n_samples_increment = self.samples.n_samples_increment
-
-        self.nodes = NodeCollection(n_features, n_classes, n_samples_increment)
+        self.nodes = NodesClassifier(n_features, n_classes, n_samples_increment)
         self.intensities = np.empty(n_features, dtype=float32)
         self.iteration = 0
-        self.add_root()
+        add_node_classifier(self.nodes, 0, 0.0)
 
-    def add_root(self):
-        add_node(self.nodes, 0, 0.0)
+
+@jitclass(spec_tree_regressor)
+class TreeRegressor(object):
+    def __init__(
+        self, n_features, step, loss, use_aggregation, split_pure, samples,
+    ):
+        self.n_features = n_features
+        self.step = step
+        self.loss = loss
+        self.use_aggregation = use_aggregation
+        self.split_pure = split_pure
+        self.samples = samples
+        n_samples_increment = self.samples.n_samples_increment
+        self.nodes = NodesRegressor(n_features, n_samples_increment)
+        self.intensities = np.empty(n_features, dtype=float32)
+        self.iteration = 0
+        add_node_regressor(self.nodes, 0, 0.0)

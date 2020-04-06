@@ -19,6 +19,7 @@ class TestOnlineDummyClassifier(object):
             min_value_str="2",
             mandatory=True,
             fixed_type=int,
+            required_args={"n_classes": 2},
         )
 
     def test_dirichlet(self):
@@ -32,6 +33,7 @@ class TestOnlineDummyClassifier(object):
             min_value_str="0",
             mandatory=False,
             fixed_type=float,
+            required_args={"n_classes": 2},
         )
 
     def test_repr(self):

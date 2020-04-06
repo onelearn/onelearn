@@ -20,6 +20,7 @@ def parameter_test_with_min(
     min_value_str=None,
     mandatory=False,
     fixed_type=None,
+    required_args=None,
 ):
     """Tests for an attribute of integer type
 
@@ -43,14 +44,15 @@ def parameter_test_with_min(
 
     """
 
+    if required_args is None:
+        required_args = {}
+
     def get_params(param, val):
         """If the parameter is not 'n_classes', we need to specify
         `n_classes`, since it's mandatory to create the class
         """
-        if param == "n_classes":
-            return {param: val}
-        else:
-            return {param: val, "n_classes": 2}
+        required_args[param] = val
+        return required_args
 
     # If the parameter is mandatory, we check that an exception is raised
     # if not passed to the constructor
