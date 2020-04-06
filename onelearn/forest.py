@@ -21,7 +21,7 @@ spec = [
     ("dirichlet", float32),
     ("split_pure", boolean),
     ("n_jobs", uint32),
-    ("reserve_samples", uint32),
+    ("n_samples_increment", uint32),
     ("verbose", boolean),
     ("trees", types.List(get_type(TreeClassifier), reflected=True)),
     ("samples", get_type(SamplesCollection)),
@@ -45,7 +45,7 @@ class AMFClassifierNoPython(object):
         dirichlet,
         split_pure,
         n_jobs,
-        reserve_samples,
+        n_samples_increment,
         verbose,
     ):
         self.n_classes = n_classes
@@ -57,11 +57,11 @@ class AMFClassifierNoPython(object):
         self.dirichlet = dirichlet
         self.split_pure = split_pure
         self.n_jobs = n_jobs
-        self.reserve_samples = reserve_samples
+        self.n_samples_increment = n_samples_increment
         self.verbose = verbose
         self.iteration = 0
 
-        samples = SamplesCollection(self.reserve_samples)
+        samples = SamplesCollection(self.n_samples_increment, self.n_features)
         self.samples = samples
 
         # TODO: reflected lists will be replaced by typed list soon...
@@ -160,6 +160,9 @@ def predict_proba_tree(forest, idx_tree, X):
     return scores
 
 
+# TODO: make amf.nopython.partial_fit work in a jitted function, test it and document it
+
+
 class AMFClassifier(object):
     """Aggregated Mondrian Forest classifier for online learning. This algorithm
     is truly online, in the sense that a single pass is performed, and that predictions
@@ -204,7 +207,7 @@ class AMFClassifier(object):
         dirichlet=None,
         split_pure=False,
         n_jobs=1,
-        reserve_samples=1024,
+        n_samples_increment=1024,
         random_state=None,
         verbose=False,
     ):
@@ -246,12 +249,12 @@ class AMFClassifier(object):
             n_jobs=1, namely single-threaded. Fow now, this parameter has no effect and
             only a single thread can be used.
 
-        reserve_samples : :obj:`int`, default = 1024
-            Sets the amount of memory which is pre-allocated each time extra memory is
-            required for new samples and new nodes. Decreasing it can slow down
-            training. If you know that each ``partial_fit`` will be called with
-            approximately `n` samples, you can set reserve_samples = `n` if `n` is
-            large (> 1024).
+        n_samples_increment : :obj:`int`, default = 1024
+            Sets the minimum amount of memory which is pre-allocated each time extra
+            memory is required for new samples and new nodes. Decreasing it can slow
+            down training. If you know that each ``partial_fit`` will be called with
+            approximately `n` samples, you can set n_samples_increment = `n` if `n` is
+            larger than the default.
 
         random_state : :obj:`int` or :obj:`None`, default = `None`
             Controls the randomness involved in the trees.
@@ -279,7 +282,7 @@ class AMFClassifier(object):
 
         self.split_pure = split_pure
         self.n_jobs = n_jobs
-        self.reserve_samples = reserve_samples
+        self.n_samples_increment = n_samples_increment
         self.random_state = random_state
         self.verbose = verbose
         self._classes = set(range(n_classes))
@@ -349,7 +352,7 @@ class AMFClassifier(object):
                 self.dirichlet,
                 self.split_pure,
                 self.n_jobs,
-                self.reserve_samples,
+                self.n_samples_increment,
                 self.verbose,
             )
         else:
@@ -624,24 +627,24 @@ class AMFClassifier(object):
                 self._n_jobs = val
 
     @property
-    def reserve_samples(self):
+    def n_samples_increment(self):
         """:obj:`int`: Amount of memory pre-allocated each time extra memory is
         required."""
-        return self._reserve_samples
+        return self._n_samples_increment
 
-    @reserve_samples.setter
-    def reserve_samples(self, val):
+    @n_samples_increment.setter
+    def n_samples_increment(self, val):
         if self.no_python:
             raise ValueError(
-                "You cannot modify `reserve_samples` after calling `partial_fit`"
+                "You cannot modify `n_samples_increment` after calling `partial_fit`"
             )
         else:
             if not isinstance(val, int):
-                raise ValueError("`reserve_samples` must be of type `int`")
+                raise ValueError("`n_samples_increment` must be of type `int`")
             elif val < 1:
-                raise ValueError("`reserve_samples` must be >= 1")
+                raise ValueError("`n_samples_increment` must be >= 1")
             else:
-                self._reserve_samples = val
+                self._n_samples_increment = val
 
     @property
     def step(self):

@@ -166,10 +166,10 @@ class TestAMFClassifier(object):
             fixed_type=int,
         )
 
-    def test_reserve_samples(self):
+    def test_n_samples_increment(self):
         parameter_test_with_min(
             AMFClassifier,
-            parameter="reserve_samples",
+            parameter="n_samples_increment",
             valid_val=128,
             invalid_type_val=2.0,
             invalid_val=0,

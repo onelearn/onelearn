@@ -54,7 +54,7 @@ spec_node_collection = [
     # Number of nodes actually used
     ("n_nodes", uint32),
     # For how many samples do we allocate nodes in advance ?
-    ("reserve_samples", uint32),
+    ("n_samples_increment", uint32),
     # Number of nodes currently allocated in memory
     ("n_nodes_reserved", uint32),
     ("n_nodes_computed", uint32),
@@ -63,10 +63,10 @@ spec_node_collection = [
 
 @jitclass(spec_node_collection)
 class NodeCollection(object):
-    def __init__(self, n_features, n_classes, reserve_samples):
+    def __init__(self, n_features, n_classes, n_samples_increment):
         # One for root + and twice the number of samples
-        n_nodes_reserved = 2 * reserve_samples + 1
-        self.reserve_samples = reserve_samples
+        n_nodes_reserved = 2 * n_samples_increment + 1
+        self.n_samples_increment = n_samples_increment
         self.n_features = n_features
         self.n_classes = n_classes
         # TODO: group together arrays of the same type for faster computations
@@ -96,7 +96,7 @@ class NodeCollection(object):
 @njit(void(get_type(NodeCollection)))
 def reserve_nodes(node_collection):
     n_nodes_reserved = (
-        node_collection.n_nodes_reserved + node_collection.reserve_samples
+        node_collection.n_nodes_reserved + node_collection.n_samples_increment
     )
     n_nodes = node_collection.n_nodes
     if n_nodes_reserved > node_collection.n_nodes_reserved:
@@ -105,7 +105,7 @@ def reserve_nodes(node_collection):
         )
         # By default, a node is a leaf when newly created
         node_collection.is_leaf = resize_array(
-            node_collection.is_leaf, n_nodes, n_nodes_reserved, True
+            node_collection.is_leaf, n_nodes, n_nodes_reserved, fill=1
         )
         node_collection.depth = resize_array(
             node_collection.depth, n_nodes, n_nodes_reserved
