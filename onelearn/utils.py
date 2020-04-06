@@ -30,7 +30,7 @@ def get_type(class_):
 
 
 @njit
-def resize_array(arr, keep, size, ones=False):
+def resize_array(arr, keep, size, fill=0):
     """Resize the given array along the first axis only, preserving the same
     dtype and second axis size (if it's two-dimensional)
 
@@ -45,8 +45,11 @@ def resize_array(arr, keep, size, ones=False):
     size : `int`
         Target size of the first axis of new array (
 
-    ones : `bool`
-        If `True`, fill the new array by ones before keeping the first elements
+    fill : {`None`, 0, 1}, default=0
+        Controls the values in the resized array before putting back the first elements
+        * If None, the array is not filled
+        * If 1 the array is filled with ones
+        * If 0 the array is filled with zeros
 
     Returns
     -------
@@ -55,7 +58,9 @@ def resize_array(arr, keep, size, ones=False):
         elements preserved (along first axis)
     """
     if arr.ndim == 1:
-        if ones:
+        if fill is None:
+            new = np.empty((size,), dtype=arr.dtype)
+        elif fill == 1:
             new = np.ones((size,), dtype=arr.dtype)
         else:
             new = np.zeros((size,), dtype=arr.dtype)
@@ -63,7 +68,12 @@ def resize_array(arr, keep, size, ones=False):
         return new
     elif arr.ndim == 2:
         _, n_cols = arr.shape
-        new = np.zeros((size, n_cols), dtype=arr.dtype)
+        if fill is None:
+            new = np.empty((size, n_cols), dtype=arr.dtype)
+        elif fill == 1:
+            new = np.ones((size, n_cols), dtype=arr.dtype)
+        else:
+            new = np.zeros((size, n_cols), dtype=arr.dtype)
         new[:keep] = arr[:keep]
         return new
     else:

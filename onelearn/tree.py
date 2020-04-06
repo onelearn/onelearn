@@ -51,9 +51,9 @@ class TreeClassifier(object):
         # TODO: something more clever than this ?
         # default_reserve = 512
         # self.nodes = NodeCollection(n_features, n_classes, default_reserve)
-        reserve_samples = self.samples.reserve_samples
+        n_samples_increment = self.samples.n_samples_increment
 
-        self.nodes = NodeCollection(n_features, n_classes, reserve_samples)
+        self.nodes = NodeCollection(n_features, n_classes, n_samples_increment)
         self.intensities = np.empty(n_features, dtype=float32)
         self.iteration = 0
         self.add_root()
