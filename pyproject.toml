@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "onelearn"
-version = "0.1.5"
+version = "0.2.0"
 description = "onelearn is a small python package for online learning"
 readme = "README.md"
 authors = ["Stéphane Gaïffas <stephane.gaiffas@gmail.com>"]
