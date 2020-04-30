@@ -45,6 +45,8 @@ from . import parameter_test_with_min, parameter_test_with_type, approx
 #     def test_online_forest_n_classes_differs(self):
 #         pass
 
+# TODO: parameter_test_with_type does nothing !!!
+
 
 class TestAMFClassifier(object):
     def test_n_classes(self):
@@ -58,6 +60,7 @@ class TestAMFClassifier(object):
             min_value_str="2",
             mandatory=True,
             fixed_type=int,
+            required_args={"n_classes": 2},
         )
 
     def test_n_features(self):
@@ -80,6 +83,7 @@ class TestAMFClassifier(object):
             min_value_str="1",
             mandatory=False,
             fixed_type=int,
+            required_args={"n_classes": 2},
         )
 
     def test_step(self):
@@ -93,6 +97,7 @@ class TestAMFClassifier(object):
             min_value_str="0",
             mandatory=False,
             fixed_type=float,
+            required_args={"n_classes": 2},
         )
 
     def test_loss(self):
@@ -122,6 +127,7 @@ class TestAMFClassifier(object):
             min_value_str="0",
             mandatory=False,
             fixed_type=float,
+            required_args={"n_classes": 2},
         )
 
     def test_split_pure(self):
@@ -145,6 +151,7 @@ class TestAMFClassifier(object):
             min_value_str="0",
             mandatory=False,
             fixed_type=int,
+            required_args={"n_classes": 2},
         )
         amf = AMFClassifier(n_classes=2)
         assert amf.random_state is None
@@ -164,6 +171,7 @@ class TestAMFClassifier(object):
             min_value_str="1",
             mandatory=False,
             fixed_type=int,
+            required_args={"n_classes": 2},
         )
 
     def test_n_samples_increment(self):
@@ -177,6 +185,7 @@ class TestAMFClassifier(object):
             min_value_str="1",
             mandatory=False,
             fixed_type=int,
+            required_args={"n_classes": 2},
         )
 
     def test_verbose(self):
@@ -193,7 +202,7 @@ class TestAMFClassifier(object):
         amf = AMFClassifier(n_classes=3)
         assert (
             repr(amf) == "AMFClassifier(n_classes=3, n_estimators=10, "
-            "step=1.0, loss=log, use_aggregation=True, "
+            "step=1.0, loss='log', use_aggregation=True, "
             "dirichlet=0.01, split_pure=False, n_jobs=1, "
             "random_state=None, verbose=False)"
         )
@@ -201,7 +210,7 @@ class TestAMFClassifier(object):
         amf.n_estimators = 42
         assert (
             repr(amf) == "AMFClassifier(n_classes=3, n_estimators=42, "
-            "step=1.0, loss=log, use_aggregation=True, "
+            "step=1.0, loss='log', use_aggregation=True, "
             "dirichlet=0.01, split_pure=False, n_jobs=1, "
             "random_state=None, verbose=False)"
         )
@@ -209,7 +218,7 @@ class TestAMFClassifier(object):
         amf.verbose = False
         assert (
             repr(amf) == "AMFClassifier(n_classes=3, n_estimators=42, "
-            "step=1.0, loss=log, use_aggregation=True, "
+            "step=1.0, loss='log', use_aggregation=True, "
             "dirichlet=0.01, split_pure=False, n_jobs=1, "
             "random_state=None, verbose=False)"
         )
@@ -255,7 +264,7 @@ class TestAMFClassifier(object):
         clf = AMFClassifier(n_classes=2)
         with pytest.raises(
             RuntimeError,
-            match="You must call `partial_fit` before calling `predict_proba`",
+            match="You must call `partial_fit` before asking for predictions",
         ):
             X_test = np.random.randn(2, 3)
             clf.predict_proba(X_test)
@@ -267,10 +276,11 @@ class TestAMFClassifier(object):
             X_test = np.random.randn(2, 3)
             clf.predict_proba(X_test)
         assert exc_info.type is ValueError
-        assert (
-            exc_info.value.args[0] == "`partial_fit` was called with "
-            "n_features=%d while `predict_proba` "
-            "received n_features=%d" % (clf.n_features, 3)
+        assert exc_info.value.args[
+            0
+        ] == "`partial_fit` was called with n_features=%d while predictions are asked with n_features=%d" % (
+            clf.n_features,
+            3,
         )
 
     def test_performance_on_moons(self):
@@ -286,6 +296,26 @@ class TestAMFClassifier(object):
         score = roc_auc_score(y_test, y_pred[:, 1])
         # With this random_state, the score should be exactly 0.9709821428571429
         assert score > 0.97
+
+    def test_predict_proba_tree_match_predict_proba(self):
+        n_samples = 300
+        n_classes = 2
+        n_estimators = 10
+        random_state = 42
+        X, y = make_moons(n_samples=n_samples, noise=0.25, random_state=random_state)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.5, random_state=random_state
+        )
+        clf = AMFClassifier(
+            n_classes=2, n_estimators=n_estimators, random_state=random_state
+        )
+        clf.partial_fit(X_train, y_train)
+        y_pred = clf.predict_proba(X_test)
+        y_pred_tree = np.empty((y_pred.shape[0], n_classes, n_estimators))
+        for idx_tree in range(n_estimators):
+            y_pred_tree[:, :, idx_tree] = clf.predict_proba_tree(X_test, idx_tree)
+
+        assert y_pred == approx(y_pred_tree.mean(axis=2), 1e-6)
 
     def test_random_state_is_consistant(self):
         n_samples = 300

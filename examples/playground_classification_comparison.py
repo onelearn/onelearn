@@ -2,7 +2,8 @@
 # License: BSD 3 clause
 
 # Run the following:
-# streamlit run playground_decision.py
+# streamlit run playground_classification_comparison.py
+
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,6 +15,9 @@ from sklearn.datasets import (
     make_classification,
 )
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier
+from skgarden import MondrianForestClassifier
+
 
 sys.path.extend([".", ".."])
 from onelearn import AMFClassifier
@@ -28,8 +32,6 @@ n_samples = 101
 random_state = 42
 # Delta in the meshgrid
 h = 0.01
-# Number of color levels in the contour plot
-levels = 100
 
 st.title("`AMFClassifier` playground")
 
@@ -39,15 +41,19 @@ st.sidebar.markdown("Choose the dataset below")
 dataset = st.sidebar.selectbox(
     "dataset", ["moons", "circles", "linear", "blobs"], index=0
 )
+st.sidebar.title("Plot options")
 show_data = st.sidebar.checkbox("Show data", value=True)
 normalize = st.sidebar.checkbox("Normalize colors", value=True)
+levels = st.sidebar.slider(
+    label="Number of colors used", min_value=10, max_value=500, step=10, value=100
+)
 
 st.sidebar.title("Parameters")
 st.sidebar.markdown("Hyperparameters of the AMFClassifier")
 use_aggregation = st.sidebar.checkbox("Use aggregation", value=True)
 split_pure = st.sidebar.checkbox("Split pure cells", value=True)
 n_estimators = st.sidebar.selectbox(
-    "Number of trees", [1, 5, 10, 50, 200, 500], index=2
+    "Number of trees", [1, 5, 10, 50, 100, 200], index=2
 )
 step = st.sidebar.selectbox("step", [0.01, 0.1, 0.5, 1.0, 5.0, 100.0, 1000.0], index=3)
 dirichlet = st.sidebar.selectbox(
@@ -95,8 +101,6 @@ def simulate_data(dataset="moons"):
 X, y = simulate_data(dataset)
 n_classes = int(y.max() + 1)
 n_samples_train = X.shape[0]
-st.sidebar.markdown("Show the iterations instead of the final decision function")
-show_iterations = st.sidebar.checkbox("Show iterations", value=False)
 
 
 @st.cache
@@ -108,8 +112,7 @@ xx, yy, X_mesh = build_mesh(X)
 
 
 @st.cache
-def get_amf_decision_batch(use_aggregation, n_estimators, split_pure, dirichlet, step):
-    # TODO: add a progress bar
+def get_amf_decision(use_aggregation, n_estimators, split_pure, dirichlet, step):
     amf = AMFClassifier(
         n_classes=n_classes,
         random_state=random_state,
@@ -124,54 +127,61 @@ def get_amf_decision_batch(use_aggregation, n_estimators, split_pure, dirichlet,
     return zz
 
 
-@st.cache(suppress_st_warning=True)
-def get_amf_decisions(use_aggregation, n_estimators, split_pure, dirichlet, step):
-    amf = AMFClassifier(
-        n_classes=n_classes,
-        random_state=random_state,
-        use_aggregation=use_aggregation,
-        n_estimators=n_estimators,
-        split_pure=split_pure,
-        dirichlet=dirichlet,
-        step=step,
+@st.cache
+def get_mf_decision(n_estimators):
+    clf = MondrianForestClassifier(n_estimators=n_estimators, random_state=random_state)
+    clf.partial_fit(X, y)
+    zz = clf.predict_proba(X_mesh)[:, 1].reshape(xx.shape)
+    return zz
+
+
+@st.cache
+def get_rf_decision(n_estimators):
+    clf = RandomForestClassifier(n_estimators=n_estimators, random_state=random_state)
+    clf.fit(X, y)
+    zz = clf.predict_proba(X_mesh)[:, 1].reshape(xx.shape)
+    return zz
+
+
+@st.cache
+def get_et_decision(n_estimators):
+    clf = ExtraTreesClassifier(n_estimators=n_estimators, random_state=random_state)
+    clf.fit(X, y)
+    zz = clf.predict_proba(X_mesh)[:, 1].reshape(xx.shape)
+    return zz
+
+
+decision_amf = get_amf_decision(
+    use_aggregation, n_estimators, split_pure, dirichlet, step
+)
+decision_mf = get_mf_decision(n_estimators)
+decision_rf = get_rf_decision(n_estimators)
+decision_et = get_et_decision(n_estimators)
+X_current = X
+y_current = y
+
+
+fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(4, 4))
+
+for ax, decision, title in zip(
+    axes.ravel(),
+    [decision_amf, decision_mf, decision_rf, decision_et],
+    ["AMF", "MF", "RF", "ET"],
+):
+    plot_contour_binary_classif(
+        ax, xx, yy, decision, levels=levels, norm=norm, title=title
     )
-    zzs = []
-    progress_bar = st.sidebar.progress(0)
-    for it in range(1, n_samples_train + 1):
-        amf.partial_fit(X[it - 1].reshape(1, 2), np.array([y[it - 1]]))
-        zz = amf.predict_proba(X_mesh)[:, 1].reshape(xx.shape)
-        zzs.append(zz)
-        progress = int(100 * it / n_samples_train)
-        progress_bar.progress(progress)
-    return zzs
 
+    if show_data:
+        plot_scatter_binary_classif(
+            ax, xx, yy, X_current, y_current, s=5, lw=1, norm=norm
+        )
 
-if show_iterations:
-    iteration = st.sidebar.number_input(
-        label="iteration", min_value=1, max_value=n_samples_train - 1, value=1, step=1
-    )
-    zzs = get_amf_decisions(use_aggregation, n_estimators, split_pure, dirichlet, step)
-    zz = zzs[iteration - 1]
-    X_current = X[:iteration]
-    y_current = y[:iteration]
-else:
-    zz = get_amf_decision_batch(
-        use_aggregation, n_estimators, split_pure, dirichlet, step
-    )
-    X_current = X
-    y_current = y
-
-
-_ = plt.figure(figsize=(3, 3))
-ax = plt.subplot(1, 1, 1)
-plot_contour_binary_classif(ax, xx, yy, zz, levels=levels, norm=norm)
-if show_data:
-    plot_scatter_binary_classif(ax, xx, yy, X_current, y_current, s=5, lw=1, norm=norm)
 plt.tight_layout()
 st.pyplot()
 
 
-"""This small demo illustrates the usage of the Aggregation Mondrian Forest for 
+"""This small demo illustrates the usage of the Aggregated Mondrian Forest for 
 binary classification using `AMFClassifier`.
 
 ## Reference

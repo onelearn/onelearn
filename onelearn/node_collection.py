@@ -6,9 +6,8 @@ from .types import void, float32, boolean, uint32, uint8, get_array_2d_type
 from .utils import resize_array, get_type
 
 
-# TODO: write the docstrings
-
-spec_node_collection = [
+# Specification of base node attributes
+spec_nodes = [
     # The index of the node in the tree
     ("index", uint32[::1]),
     # Is the node a leaf ?
@@ -25,8 +24,7 @@ spec_node_collection = [
     ("right", uint32[::1]),
     # Index of the feature used for the split
     ("feature", uint32[::1]),
-    # The label of the sample saved in the node
-    ("y_t", float32[::1]),
+    # TODO: is it used ?
     # Logarithm of the aggregation weight for the node
     ("weight", float32[::1]),
     # Logarithm of the aggregation weight for the sub-tree starting at this node
@@ -35,171 +33,418 @@ spec_node_collection = [
     ("threshold", float32[::1]),
     # Time of creation of the node
     ("time", float32[::1]),
-    # Counts the number of sample seen in each class
-    ("counts", get_array_2d_type(uint32)),
-    # Is the range of the node is memorized ?
-    ("memorized", boolean[::1]),
     # Minimum range of the data points in the node
     ("memory_range_min", get_array_2d_type(float32)),
     # Maximum range of the data points in the node
     ("memory_range_max", get_array_2d_type(float32)),
-    # List of the samples contained in the range of the node (this allows to
-    # compute the range whenever the range memory isn't used)
-    # TODO: this is going to be a problem, we don't know in advance how many points end up in the node
-    # ('samples', typed.List(uint32)),
     # Number of features
     ("n_features", uint32),
-    # Number of classes
-    ("n_classes", uint32),
     # Number of nodes actually used
     ("n_nodes", uint32),
-    # For how many samples do we allocate nodes in advance ?
+    # For how many nodes do we allocate nodes in advance ?
     ("n_samples_increment", uint32),
     # Number of nodes currently allocated in memory
-    ("n_nodes_reserved", uint32),
-    ("n_nodes_computed", uint32),
+    ("n_nodes_capacity", uint32),
 ]
 
 
-@jitclass(spec_node_collection)
-class NodeCollection(object):
-    def __init__(self, n_features, n_classes, n_samples_increment):
-        # One for root + and twice the number of samples
-        n_nodes_reserved = 2 * n_samples_increment + 1
-        self.n_samples_increment = n_samples_increment
-        self.n_features = n_features
-        self.n_classes = n_classes
-        # TODO: group together arrays of the same type for faster computations
-        #  and copies ?
-        self.index = np.zeros(n_nodes_reserved, dtype=uint32)
-        self.is_leaf = np.ones(n_nodes_reserved, dtype=boolean)
-        self.depth = np.zeros(n_nodes_reserved, dtype=uint8)
-        self.n_samples = np.zeros(n_nodes_reserved, dtype=uint32)
-        self.parent = np.zeros(n_nodes_reserved, dtype=uint32)
-        self.left = np.zeros(n_nodes_reserved, dtype=uint32)
-        self.right = np.zeros(n_nodes_reserved, dtype=uint32)
-        self.feature = np.zeros(n_nodes_reserved, dtype=uint32)
-        self.y_t = np.zeros(n_nodes_reserved, dtype=float32)
-        self.weight = np.zeros(n_nodes_reserved, dtype=float32)
-        self.log_weight_tree = np.zeros(n_nodes_reserved, dtype=float32)
-        self.threshold = np.zeros(n_nodes_reserved, dtype=float32)
-        self.time = np.zeros(n_nodes_reserved, dtype=float32)
-        self.counts = np.zeros((n_nodes_reserved, n_classes), dtype=uint32)
-        self.memorized = np.zeros(n_nodes_reserved, dtype=boolean)
-        self.memory_range_min = np.zeros((n_nodes_reserved, n_features), dtype=float32)
-        self.memory_range_max = np.zeros((n_nodes_reserved, n_features), dtype=float32)
-        self.n_nodes_reserved = n_nodes_reserved
-        self.n_nodes = 0
-        self.n_nodes_computed = 0
+# TODO: group together arrays of the same type for faster computations
+#  and copies ?
 
 
-@njit(void(get_type(NodeCollection)))
-def reserve_nodes(node_collection):
-    n_nodes_reserved = (
-        node_collection.n_nodes_reserved + node_collection.n_samples_increment
-    )
-    n_nodes = node_collection.n_nodes
-    if n_nodes_reserved > node_collection.n_nodes_reserved:
-        node_collection.index = resize_array(
-            node_collection.index, n_nodes, n_nodes_reserved
-        )
-        # By default, a node is a leaf when newly created
-        node_collection.is_leaf = resize_array(
-            node_collection.is_leaf, n_nodes, n_nodes_reserved, fill=1
-        )
-        node_collection.depth = resize_array(
-            node_collection.depth, n_nodes, n_nodes_reserved
-        )
-        node_collection.n_samples = resize_array(
-            node_collection.n_samples, n_nodes, n_nodes_reserved
-        )
-        node_collection.parent = resize_array(
-            node_collection.parent, n_nodes, n_nodes_reserved
-        )
-        node_collection.left = resize_array(
-            node_collection.left, n_nodes, n_nodes_reserved
-        )
-        node_collection.right = resize_array(
-            node_collection.right, n_nodes, n_nodes_reserved
-        )
-        node_collection.feature = resize_array(
-            node_collection.feature, n_nodes, n_nodes_reserved
-        )
-        node_collection.y_t = resize_array(
-            node_collection.y_t, n_nodes, n_nodes_reserved
-        )
-        node_collection.weight = resize_array(
-            node_collection.weight, n_nodes, n_nodes_reserved
-        )
-        node_collection.log_weight_tree = resize_array(
-            node_collection.log_weight_tree, n_nodes, n_nodes_reserved
-        )
-        node_collection.threshold = resize_array(
-            node_collection.threshold, n_nodes, n_nodes_reserved
-        )
-        node_collection.time = resize_array(
-            node_collection.time, n_nodes, n_nodes_reserved
-        )
-        node_collection.counts = resize_array(
-            node_collection.counts, n_nodes, n_nodes_reserved
-        )
-        node_collection.memorized = resize_array(
-            node_collection.memorized, n_nodes, n_nodes_reserved
-        )
-        node_collection.memory_range_min = resize_array(
-            node_collection.memory_range_min, n_nodes, n_nodes_reserved
-        )
-        node_collection.memory_range_max = resize_array(
-            node_collection.memory_range_max, n_nodes, n_nodes_reserved
-        )
-
-    node_collection.n_nodes_reserved = n_nodes_reserved
+spec_nodes_classifier = spec_nodes + [
+    # Counts the number of sample seen in each class
+    ("counts", get_array_2d_type(uint32)),
+    # Number of classes
+    ("n_classes", uint32),
+]
 
 
-@njit(uint32(get_type(NodeCollection), uint32, float32))
-def add_node(node_collection, parent, time):
+@jitclass(spec_nodes_classifier)
+class NodesClassifier(object):
+    """A collection of nodes for classification.
+
+    Attributes
+    ----------
+    n_features : :obj:`int`
+        Number of features used during training.
+
+    n_nodes : :obj:`int`
+        Number of nodes saved in the collection.
+
+    n_samples_increment : :obj:`int`
+        The minimum amount of memory which is pre-allocated each time extra memory is
+        required for new nodes.
+
+    n_nodes_capacity : :obj:`int`
+        Number of nodes that can be currently saved in the object.
+
     """
-    Add a node with specified parent and creation time. The other fields
-    will be provided later on
+
+    def __init__(self, n_features, n_classes, n_samples_increment):
+        """Instantiates a `NodesClassifier` instance.
+
+        Parameters
+        ----------
+        n_features : :obj:`int`
+            Number of features used during training.
+
+        n_classes : :obj:`int`
+            Number of expected classes in the labels.
+
+        n_samples_increment : :obj:`int`
+            The minimum amount of memory which is pre-allocated each time extra memory
+            is required for new nodes.
+
+        """
+        init_nodes(self, n_features, n_samples_increment)
+        init_nodes_classifier(self, n_classes)
+
+
+spec_nodes_regressor = spec_nodes + [
+    # Current mean of the labels in the node
+    ("mean", float32[::1]),
+]
+
+
+@jitclass(spec_nodes_regressor)
+class NodesRegressor(object):
+    """A collection of nodes for regression.
+
+    Attributes
+    ----------
+    n_features : :obj:`int`
+        Number of features used during training.
+
+    n_nodes : :obj:`int`
+        Number of nodes saved in the collection.
+
+    n_samples_increment : :obj:`int`
+        The minimum amount of memory which is pre-allocated each time extra memory is
+        required for new nodes.
+
+    n_nodes_capacity : :obj:`int`
+        Number of nodes that can be currently saved in the object.
+
+    """
+
+    def __init__(self, n_features, n_samples_increment):
+        """Instantiates a `NodesClassifier` instance.
+
+        Parameters
+        ----------
+        n_features : :obj:`int`
+            Number of features used during training.
+
+        n_classes : :obj:`int`
+            Number of expected classes in the labels.
+
+        n_samples_increment : :obj:`int`
+            The minimum amount of memory which is pre-allocated each time extra memory
+            is required for new nodes.
+
+        """
+        init_nodes(self, n_features, n_samples_increment)
+        init_nodes_regressor(self)
+
+
+@njit(
+    [
+        void(get_type(NodesClassifier), uint32, uint32),
+        void(get_type(NodesRegressor), uint32, uint32),
+    ]
+)
+def init_nodes(nodes, n_features, n_samples_increment):
+    """Initializes a `Nodes` instance.
+
+    Parameters
+    ----------
+    n_features : :obj:`int`
+        Number of features used during training.
+
+    n_samples_increment : :obj:`int`
+        The minimum amount of memory which is pre-allocated each time extra memory is
+        required for new nodes.
+
+    """
+    # One for root + and twice the number of samples
+    n_nodes_capacity = 2 * n_samples_increment + 1
+    nodes.n_samples_increment = n_samples_increment
+    nodes.n_features = n_features
+    nodes.n_nodes_capacity = n_nodes_capacity
+    nodes.n_nodes = 0
+    # Initialize node attributes
+    nodes.index = np.zeros(n_nodes_capacity, dtype=uint32)
+    nodes.is_leaf = np.ones(n_nodes_capacity, dtype=boolean)
+    nodes.depth = np.zeros(n_nodes_capacity, dtype=uint8)
+    nodes.n_samples = np.zeros(n_nodes_capacity, dtype=uint32)
+    nodes.parent = np.zeros(n_nodes_capacity, dtype=uint32)
+    nodes.left = np.zeros(n_nodes_capacity, dtype=uint32)
+    nodes.right = np.zeros(n_nodes_capacity, dtype=uint32)
+    nodes.feature = np.zeros(n_nodes_capacity, dtype=uint32)
+    nodes.weight = np.zeros(n_nodes_capacity, dtype=float32)
+    nodes.log_weight_tree = np.zeros(n_nodes_capacity, dtype=float32)
+    nodes.threshold = np.zeros(n_nodes_capacity, dtype=float32)
+    nodes.time = np.zeros(n_nodes_capacity, dtype=float32)
+    nodes.memory_range_min = np.zeros((n_nodes_capacity, n_features), dtype=float32)
+    nodes.memory_range_max = np.zeros((n_nodes_capacity, n_features), dtype=float32)
+
+
+@njit(void(get_type(NodesClassifier), uint32))
+def init_nodes_classifier(nodes, n_classes):
+    """Initializes a `NodesClassifier` instance.
+
+    Parameters
+    ----------
+    n_classes : :obj:`int`
+        Number of expected classes in the labels.
+
+    """
+    nodes.counts = np.zeros((nodes.n_nodes_capacity, n_classes), dtype=uint32)
+    nodes.n_classes = n_classes
+
+
+@njit(void(get_type(NodesRegressor)))
+def init_nodes_regressor(nodes):
+    """Initializes a `NodesRegressor` instance.
+
+    """
+    nodes.mean = np.zeros(nodes.n_nodes_capacity, dtype=float32)
+
+
+@njit(
+    [void(get_type(NodesClassifier)), void(get_type(NodesRegressor)),]
+)
+def reserve_nodes(nodes):
+    """Reserves memory for nodes.
+
+    Parameters
+    ----------
+    nodes : :obj:`Nodes`
+        The collection of nodes.
+    """
+    n_nodes_capacity = nodes.n_nodes_capacity + 2 * nodes.n_samples_increment + 1
+    n_nodes = nodes.n_nodes
+    # TODO: why is this test useful ?
+    if n_nodes_capacity > nodes.n_nodes_capacity:
+        nodes.index = resize_array(nodes.index, n_nodes, n_nodes_capacity)
+        # By default, a node is a leaf when newly created
+        nodes.is_leaf = resize_array(nodes.is_leaf, n_nodes, n_nodes_capacity, fill=1)
+        nodes.depth = resize_array(nodes.depth, n_nodes, n_nodes_capacity)
+        nodes.n_samples = resize_array(nodes.n_samples, n_nodes, n_nodes_capacity)
+        nodes.parent = resize_array(nodes.parent, n_nodes, n_nodes_capacity)
+        nodes.left = resize_array(nodes.left, n_nodes, n_nodes_capacity)
+        nodes.right = resize_array(nodes.right, n_nodes, n_nodes_capacity)
+        nodes.feature = resize_array(nodes.feature, n_nodes, n_nodes_capacity)
+        nodes.weight = resize_array(nodes.weight, n_nodes, n_nodes_capacity)
+        nodes.log_weight_tree = resize_array(
+            nodes.log_weight_tree, n_nodes, n_nodes_capacity
+        )
+        nodes.threshold = resize_array(nodes.threshold, n_nodes, n_nodes_capacity)
+        nodes.time = resize_array(nodes.time, n_nodes, n_nodes_capacity)
+
+        nodes.memory_range_min = resize_array(
+            nodes.memory_range_min, n_nodes, n_nodes_capacity
+        )
+        nodes.memory_range_max = resize_array(
+            nodes.memory_range_max, n_nodes, n_nodes_capacity
+        )
+
+    nodes.n_nodes_capacity = n_nodes_capacity
+
+
+@njit(void(get_type(NodesClassifier)))
+def reserve_nodes_classifier(nodes):
+    """Reserves memory for classifier nodes.
+
+    Parameters
+    ----------
+    nodes : :obj:`NodesClassifier`
+        The collection of classifier nodes.
+
+    """
+    reserve_nodes(nodes)
+    nodes.counts = resize_array(nodes.counts, nodes.n_nodes, nodes.n_nodes_capacity)
+
+
+@njit(void(get_type(NodesRegressor)))
+def reserve_nodes_regressor(nodes):
+    """Reserves memory for regressor nodes.
+
+    Parameters
+    ----------
+    nodes : :obj:`NodesRegressor`
+        The collection of regressor nodes.
+
+    """
+    reserve_nodes(nodes)
+    nodes.mean = resize_array(nodes.mean, nodes.n_nodes, nodes.n_nodes_capacity)
+
+
+@njit(
+    [
+        uint32(get_type(NodesClassifier), uint32, float32),
+        uint32(get_type(NodesRegressor), uint32, float32),
+    ]
+)
+def add_node(nodes, parent, time):
+    """Adds a node with specified parent and creation time. This functions assumes that
+    a node has been already allocated by "child" functions `add_node_classifier` and
+    `add_node_regressor`.
+
+    Parameters
+    ----------
+    nodes : :obj:`Nodes`
+        The collection of nodes.
+
+    parent : :obj:`int`
+        The index of the parent of the new node.
+
+    time : :obj:`float`
+        The creation time of the new node.
 
     Returns
     -------
-    output : `int` index of the added node
+    output : `int`
+        Index of the new node.
+
     """
-    if node_collection.n_nodes >= node_collection.n_nodes_reserved:
+    node_index = nodes.n_nodes
+    nodes.index[node_index] = node_index
+    nodes.parent[node_index] = parent
+    nodes.time[node_index] = time
+    nodes.n_nodes += 1
+    return nodes.n_nodes - 1
+
+
+@njit(uint32(get_type(NodesClassifier), uint32, float32))
+def add_node_classifier(nodes, parent, time):
+    """Adds a node with specified parent and creation time.
+
+    Parameters
+    ----------
+    nodes : :obj:`Nodes`
+        The collection of nodes.
+
+    parent : :obj:`int`
+        The index of the parent of the new node.
+
+    time : :obj:`float`
+        The creation time of the new node.
+
+    Returns
+    -------
+    output : `int`
+        Index of the new node.
+
+    """
+    if nodes.n_nodes >= nodes.n_nodes_capacity:
         # We don't have memory for this extra node, so let's create some
-        reserve_nodes(node_collection)
+        reserve_nodes_classifier(nodes)
 
-    node_index = node_collection.n_nodes
-    node_collection.index[node_index] = node_index
-    node_collection.parent[node_index] = parent
-    node_collection.time[node_index] = time
-    node_collection.n_nodes += 1
-    # This is a new node, so it's necessary computed for now
-    node_collection.n_nodes_computed += 1
-    return node_collection.n_nodes - 1
+    return add_node(nodes, parent, time)
 
 
-@njit(void(get_type(NodeCollection), uint32, uint32))
-def copy_node(node_collection, first, second):
+@njit(uint32(get_type(NodesRegressor), uint32, float32))
+def add_node_regressor(nodes, parent, time):
+    """Adds a node with specified parent and creation time.
+
+    Parameters
+    ----------
+    nodes : :obj:`Nodes`
+        The collection of nodes.
+
+    parent : :obj:`int`
+        The index of the parent of the new node.
+
+    time : :obj:`float`
+        The creation time of the new node.
+
+    Returns
+    -------
+    output : `int`
+        Index of the new node.
+
+    """
+    if nodes.n_nodes >= nodes.n_nodes_capacity:
+        # We don't have memory for this extra node, so let's create some
+        reserve_nodes_regressor(nodes)
+
+    return add_node(nodes, parent, time)
+
+
+@njit(
+    [
+        void(get_type(NodesClassifier), uint32, uint32),
+        void(get_type(NodesRegressor), uint32, uint32),
+    ]
+)
+def copy_node(nodes, first, second):
+    """Copies the node at index ``first`` into the node at index ``second``.
+
+    Parameters
+    ----------
+    nodes : :obj:`Nodes`
+        The collection of nodes.
+
+    first : :obj:`int`
+        The index of the node to be copied in ``second``.
+
+    second : :obj:`int`
+        The index of the node containing the copy of ``first``.
+
+    """
     # We must NOT copy the index
-    node_collection.is_leaf[second] = node_collection.is_leaf[first]
-    node_collection.depth[second] = node_collection.depth[first]
-    node_collection.n_samples[second] = node_collection.n_samples[first]
-    node_collection.parent[second] = node_collection.parent[first]
-    node_collection.left[second] = node_collection.left[first]
-    node_collection.right[second] = node_collection.right[first]
-    node_collection.feature[second] = node_collection.feature[first]
-    node_collection.y_t[second] = node_collection.y_t[first]
-    node_collection.weight[second] = node_collection.weight[first]
-    node_collection.log_weight_tree[second] = node_collection.log_weight_tree[first]
-    node_collection.threshold[second] = node_collection.threshold[first]
-    node_collection.time[second] = node_collection.time[first]
-    node_collection.counts[second, :] = node_collection.counts[first, :]
-    node_collection.memorized[second] = node_collection.memorized[first]
-    node_collection.memory_range_min[second, :] = node_collection.memory_range_min[
-        first, :
-    ]
-    node_collection.memory_range_max[second, :] = node_collection.memory_range_max[
-        first, :
-    ]
+    nodes.is_leaf[second] = nodes.is_leaf[first]
+    nodes.depth[second] = nodes.depth[first]
+    nodes.n_samples[second] = nodes.n_samples[first]
+    nodes.parent[second] = nodes.parent[first]
+    nodes.left[second] = nodes.left[first]
+    nodes.right[second] = nodes.right[first]
+    nodes.feature[second] = nodes.feature[first]
+    nodes.weight[second] = nodes.weight[first]
+    nodes.log_weight_tree[second] = nodes.log_weight_tree[first]
+    nodes.threshold[second] = nodes.threshold[first]
+    nodes.time[second] = nodes.time[first]
+    nodes.memory_range_min[second, :] = nodes.memory_range_min[first, :]
+    nodes.memory_range_max[second, :] = nodes.memory_range_max[first, :]
+
+
+@njit(void(get_type(NodesClassifier), uint32, uint32))
+def copy_node_classifier(nodes, first, second):
+    """Copies the node at index `first` into the node at index `second`.
+
+    Parameters
+    ----------
+    nodes : :obj:`NodesClassifier`
+        The collection of nodes
+
+    first : :obj:`int`
+        The index of the node to be copied in ``second``
+
+    second : :obj:`int`
+        The index of the node containing the copy of ``first``
+
+    """
+    copy_node(nodes, first, second)
+    nodes.counts[second, :] = nodes.counts[first, :]
+
+
+@njit(void(get_type(NodesRegressor), uint32, uint32))
+def copy_node_regressor(nodes, first, second):
+    """Copies the node at index `first` into the node at index `second`.
+
+    Parameters
+    ----------
+    nodes : :obj:`NodesRegressor`
+        The collection of nodes
+
+    first : :obj:`int`
+        The index of the node to be copied in ``second``
+
+    second : :obj:`int`
+        The index of the node containing the copy of ``first``
+
+    """
+    copy_node(nodes, first, second)
+    nodes.mean[second] = nodes.mean[first]

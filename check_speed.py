@@ -84,6 +84,7 @@ for loader in loaders_regrets:
         n_estimators=n_estimators,
         split_pure=split_pure,
         dirichlet=dirichlet,
+        # n_samples_increment=,
         step=step,
         verbose=False,
     )
