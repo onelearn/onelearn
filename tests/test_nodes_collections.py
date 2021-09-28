@@ -15,7 +15,7 @@ class TestNodesCollection(object):
         n_classes = 2
         n_samples_increment = 2
 
-        nodes = NodesClassifier(n_features, n_classes, n_samples_increment)
+        nodes = NodesClassifier(n_features, n_classes, n_samples_increment, 0, 0)
         assert nodes.n_nodes == 0
         assert nodes.n_samples_increment == 2
         assert nodes.n_nodes_capacity == 5
@@ -48,7 +48,7 @@ class TestNodesCollection(object):
         n_features = 3
         n_samples_increment = 2
 
-        nodes = NodesRegressor(n_features, n_samples_increment)
+        nodes = NodesRegressor(n_features, n_samples_increment, 0, 0)
         assert nodes.n_nodes == 0
         assert nodes.n_samples_increment == 2
         assert nodes.n_nodes_capacity == 5

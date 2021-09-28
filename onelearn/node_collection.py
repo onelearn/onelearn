@@ -1,8 +1,9 @@
 # Authors: Stephane Gaiffas <stephane.gaiffas@gmail.com>
 # License: BSD 3 clause
 import numpy as np
-from numba import jitclass, njit
-from .types import void, float32, boolean, uint32, uint8, get_array_2d_type
+from numba import njit
+from numba.experimental import jitclass
+from .types import void, float32, boolean, uint32, uint8, int32, get_array_2d_type
 from .utils import resize_array, get_type
 
 
@@ -81,7 +82,9 @@ class NodesClassifier(object):
 
     """
 
-    def __init__(self, n_features, n_classes, n_samples_increment):
+    def __init__(
+        self, n_features, n_classes, n_samples_increment, n_nodes, n_nodes_capacity
+    ):
         """Instantiates a `NodesClassifier` instance.
 
         Parameters
@@ -95,9 +98,8 @@ class NodesClassifier(object):
         n_samples_increment : :obj:`int`
             The minimum amount of memory which is pre-allocated each time extra memory
             is required for new nodes.
-
         """
-        init_nodes(self, n_features, n_samples_increment)
+        init_nodes(self, n_features, n_samples_increment, n_nodes, n_nodes_capacity)
         init_nodes_classifier(self, n_classes)
 
 
@@ -128,7 +130,7 @@ class NodesRegressor(object):
 
     """
 
-    def __init__(self, n_features, n_samples_increment):
+    def __init__(self, n_features, n_samples_increment, n_nodes, n_nodes_capacity):
         """Instantiates a `NodesClassifier` instance.
 
         Parameters
@@ -144,7 +146,7 @@ class NodesRegressor(object):
             is required for new nodes.
 
         """
-        init_nodes(self, n_features, n_samples_increment)
+        init_nodes(self, n_features, n_samples_increment, n_nodes, n_nodes_capacity)
         init_nodes_regressor(self)
 
 
@@ -154,26 +156,20 @@ class NodesRegressor(object):
         void(get_type(NodesRegressor), uint32, uint32),
     ]
 )
-def init_nodes(nodes, n_features, n_samples_increment):
-    """Initializes a `Nodes` instance.
+def init_nodes_arrays(nodes, n_nodes_capacity, n_features):
+    """Initializes the nodes arrays given their capacity
 
     Parameters
     ----------
+    nodes : :obj:`NodesClassifier` or :obj:`NodesRegressor`
+        Object to be initialized
+
+    n_nodes_capacity : :obj:`int`
+        Desired nodes capacity
+
     n_features : :obj:`int`
         Number of features used during training.
-
-    n_samples_increment : :obj:`int`
-        The minimum amount of memory which is pre-allocated each time extra memory is
-        required for new nodes.
-
     """
-    # One for root + and twice the number of samples
-    n_nodes_capacity = 2 * n_samples_increment + 1
-    nodes.n_samples_increment = n_samples_increment
-    nodes.n_features = n_features
-    nodes.n_nodes_capacity = n_nodes_capacity
-    nodes.n_nodes = 0
-    # Initialize node attributes
     nodes.index = np.zeros(n_nodes_capacity, dtype=uint32)
     nodes.is_leaf = np.ones(n_nodes_capacity, dtype=boolean)
     nodes.depth = np.zeros(n_nodes_capacity, dtype=uint8)
@@ -188,6 +184,46 @@ def init_nodes(nodes, n_features, n_samples_increment):
     nodes.time = np.zeros(n_nodes_capacity, dtype=float32)
     nodes.memory_range_min = np.zeros((n_nodes_capacity, n_features), dtype=float32)
     nodes.memory_range_max = np.zeros((n_nodes_capacity, n_features), dtype=float32)
+
+
+@njit(
+    [
+        void(get_type(NodesClassifier), uint32, uint32, uint32, uint32),
+        void(get_type(NodesRegressor), uint32, uint32, uint32, uint32),
+    ]
+)
+def init_nodes(nodes, n_features, n_samples_increment, n_nodes, n_nodes_capacity):
+    """Initializes a `Nodes` instance.
+
+    Parameters
+    ----------
+    nodes : :obj:`NodesClassifier` or :obj:`NodesRegressor`
+        Object to be initialized
+
+    n_features : :obj:`int`
+        Number of features used during training.
+
+    n_samples_increment : :obj:`int`
+        The minimum amount of memory which is pre-allocated each time extra memory is
+        required for new nodes.
+
+    n_nodes : :obj:`int`
+        Blabla
+
+    n_nodes_capacity : :obj:`int`
+        Initial required node capacity. If 0, we use 2 * n_samples_increment + 1,
+        otherwise we use the given value (useful for serialization).
+    """
+
+    if n_nodes_capacity == 0:
+        # One for root + and twice the number of samples
+        n_nodes_capacity = 2 * n_samples_increment + 1
+    nodes.n_samples_increment = n_samples_increment
+    nodes.n_features = n_features
+    nodes.n_nodes_capacity = n_nodes_capacity
+    nodes.n_nodes = n_nodes
+    # Initialize node attributes
+    init_nodes_arrays(nodes, n_nodes_capacity, n_features)
 
 
 @njit(void(get_type(NodesClassifier), uint32))
@@ -448,3 +484,44 @@ def copy_node_regressor(nodes, first, second):
     """
     copy_node(nodes, first, second)
     nodes.mean[second] = nodes.mean[first]
+
+
+def nodes_classifier_to_dict(nodes):
+    d = {}
+    for key, _ in spec_nodes_classifier:
+        d[key] = getattr(nodes, key)
+    return d
+
+
+def nodes_regressor_to_dict(nodes):
+    d = {}
+    for key, dtype in spec_nodes_regressor:
+        d[key] = getattr(nodes, key)
+    return d
+
+
+def dict_to_nodes(nodes, nodes_dict):
+    nodes.index[:] = nodes_dict["index"]
+    nodes.is_leaf[:] = nodes_dict["is_leaf"]
+    nodes.depth[:] = nodes_dict["depth"]
+    nodes.n_samples[:] = nodes_dict["n_samples"]
+    nodes.parent[:] = nodes_dict["parent"]
+    nodes.left[:] = nodes_dict["left"]
+    nodes.right[:] = nodes_dict["right"]
+    nodes.feature[:] = nodes_dict["feature"]
+    nodes.weight[:] = nodes_dict["weight"]
+    nodes.log_weight_tree[:] = nodes_dict["log_weight_tree"]
+    nodes.threshold[:] = nodes_dict["threshold"]
+    nodes.time[:] = nodes_dict["time"]
+    nodes.memory_range_min[:] = nodes_dict["memory_range_min"]
+    nodes.memory_range_max[:] = nodes_dict["memory_range_max"]
+
+
+def dict_to_nodes_classifier(nodes, nodes_dict):
+    dict_to_nodes(nodes, nodes_dict)
+    nodes.counts[:] = nodes_dict["counts"]
+
+
+def dict_to_nodes_regressor(nodes, nodes_dict):
+    dict_to_nodes(nodes, nodes_dict)
+    nodes.mean[:] = nodes_dict["mean"]
