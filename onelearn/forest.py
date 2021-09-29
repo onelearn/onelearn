@@ -1,13 +1,25 @@
 # Authors: Stephane Gaiffas <stephane.gaiffas@gmail.com>
 # License: BSD 3 clause
 import os
+import pickle as pkl
 import numpy as np
-from numba import jitclass, njit
+from numba import njit
+from numba.experimental import jitclass
 from numba import types, _helperlib
 from .types import float32, boolean, uint32, string, void, get_array_2d_type
 from .checks import check_X_y, check_array
-from .sample import SamplesCollection, add_samples
-from .tree import TreeClassifier, TreeRegressor
+from .sample import (
+    SamplesCollection,
+    add_samples,
+    samples_collection_to_dict,
+    dict_to_samples_collection,
+)
+from .tree import (
+    TreeClassifier,
+    TreeRegressor,
+    tree_classifier_to_dict,
+    tree_regressor_to_dict,
+)
 from .tree_methods import (
     tree_classifier_partial_fit,
     tree_regressor_partial_fit,
@@ -15,6 +27,7 @@ from .tree_methods import (
     tree_regressor_predict,
     tree_regressor_weighted_depth,
 )
+from .node_collection import dict_to_nodes_classifier, dict_to_nodes_regressor
 from .utils import get_type
 
 spec_amf_learner = [
@@ -56,6 +69,10 @@ class AMFClassifierNoPython(object):
         n_jobs,
         n_samples_increment,
         verbose,
+        samples,
+        trees_iteration,
+        trees_n_nodes,
+        trees_n_nodes_capacity,
     ):
         self.n_classes = n_classes
         self.n_features = n_features
@@ -68,26 +85,48 @@ class AMFClassifierNoPython(object):
         self.n_jobs = n_jobs
         self.n_samples_increment = n_samples_increment
         self.verbose = verbose
-        self.iteration = 0
-
-        samples = SamplesCollection(self.n_samples_increment, self.n_features)
         self.samples = samples
-
-        # TODO: reflected lists will be replaced by typed list soon...
-        trees = [
-            TreeClassifier(
-                self.n_classes,
-                self.n_features,
-                self.step,
-                self.loss,
-                self.use_aggregation,
-                self.dirichlet,
-                self.split_pure,
-                self.samples,
-            )
-            for _ in range(n_estimators)
-        ]
-        self.trees = trees
+        if trees_iteration.size == 0:
+            self.iteration = 0
+            # TODO: reflected lists will be replaced by typed list soon...
+            iteration = 0
+            n_nodes = 0
+            n_nodes_capacity = 0
+            trees = [
+                TreeClassifier(
+                    self.n_classes,
+                    self.n_features,
+                    self.step,
+                    self.loss,
+                    self.use_aggregation,
+                    self.dirichlet,
+                    self.split_pure,
+                    self.samples,
+                    iteration,
+                    n_nodes,
+                    n_nodes_capacity,
+                )
+                for _ in range(n_estimators)
+            ]
+            self.trees = trees
+        else:
+            trees = [
+                TreeClassifier(
+                    self.n_classes,
+                    self.n_features,
+                    self.step,
+                    self.loss,
+                    self.use_aggregation,
+                    self.dirichlet,
+                    self.split_pure,
+                    self.samples,
+                    trees_iteration[n_estimator],
+                    trees_n_nodes[n_estimator],
+                    trees_n_nodes_capacity[n_estimator],
+                )
+                for n_estimator in range(n_estimators)
+            ]
+            self.trees = trees
 
 
 @njit(void(get_type(AMFClassifierNoPython), get_array_2d_type(float32), float32[::1],))
@@ -165,6 +204,79 @@ def forest_classifier_predict_proba_tree(forest, idx_tree, X):
     return scores
 
 
+def amf_classifier_nopython_to_dict(forest):
+    d = {}
+    for key, _ in spec_amf_classifier:
+        if key == "samples":
+            d["samples"] = samples_collection_to_dict(forest.samples)
+        elif key == "trees":
+            d["trees"] = [tree_classifier_to_dict(tree) for tree in forest.trees]
+        else:
+            d[key] = getattr(forest, key)
+    return d
+
+
+def dict_to_amf_classifier_nopython(d):
+    n_classes = d["n_classes"]
+    n_features = d["n_features"]
+    n_estimators = d["n_estimators"]
+    step = d["step"]
+    loss = d["loss"]
+    use_aggregation = d["use_aggregation"]
+    dirichlet = d["dirichlet"]
+    split_pure = d["split_pure"]
+    n_jobs = d["n_jobs"]
+    n_samples_increment = d["n_samples_increment"]
+    verbose = d["verbose"]
+    # Create the samples jitclass from a dict
+    samples = dict_to_samples_collection(d["samples"])
+
+    trees_dict = d["trees"]
+    trees_iteration = np.array(
+        [tree_dict["iteration"] for tree_dict in trees_dict], dtype=np.uint32
+    )
+    trees_n_nodes = np.array(
+        [tree_dict["nodes"]["n_nodes"] for tree_dict in trees_dict], dtype=np.uint32
+    )
+    trees_n_nodes_capacity = np.array(
+        [tree_dict["nodes"]["n_nodes_capacity"] for tree_dict in trees_dict],
+        dtype=np.uint32,
+    )
+    no_python = AMFClassifierNoPython(
+        n_classes,
+        n_features,
+        n_estimators,
+        step,
+        loss,
+        use_aggregation,
+        dirichlet,
+        split_pure,
+        n_jobs,
+        n_samples_increment,
+        verbose,
+        samples,
+        trees_iteration,
+        trees_n_nodes,
+        trees_n_nodes_capacity,
+    )
+    no_python.iteration = d["iteration"]
+    no_python.samples = samples
+    trees = no_python.trees
+
+    # no_python is initialized, it remains to initialize the nodes
+    for n_estimator in range(n_estimators):
+        tree_dict = trees_dict[n_estimator]
+        nodes_dict = tree_dict["nodes"]
+        tree = trees[n_estimator]
+        nodes = tree.nodes
+        # Copy node information
+        dict_to_nodes_classifier(nodes, nodes_dict)
+        # Copy intensities
+        tree.intensities[:] = tree_dict["intensities"]
+
+    return no_python
+
+
 spec_amf_regressor = spec_amf_learner + [
     ("trees", types.List(get_type(TreeRegressor), reflected=True)),
 ]
@@ -184,6 +296,10 @@ class AMFRegressorNoPython(object):
         n_jobs,
         n_samples_increment,
         verbose,
+        samples,
+        trees_iteration,
+        trees_n_nodes,
+        trees_n_nodes_capacity,
     ):
         self.n_features = n_features
         self.n_estimators = n_estimators
@@ -194,24 +310,43 @@ class AMFRegressorNoPython(object):
         self.n_jobs = n_jobs
         self.n_samples_increment = n_samples_increment
         self.verbose = verbose
-        self.iteration = 0
-
-        samples = SamplesCollection(self.n_samples_increment, self.n_features)
         self.samples = samples
-
-        # TODO: reflected lists will be replaced by typed list soon...
-        trees = [
-            TreeRegressor(
-                self.n_features,
-                self.step,
-                self.loss,
-                self.use_aggregation,
-                self.split_pure,
-                self.samples,
-            )
-            for _ in range(n_estimators)
-        ]
-        self.trees = trees
+        if trees_iteration.size == 0:
+            self.iteration = 0
+            iteration = 0
+            n_nodes = 0
+            n_nodes_capacity = 0
+            trees = [
+                TreeRegressor(
+                    self.n_features,
+                    self.step,
+                    self.loss,
+                    self.use_aggregation,
+                    self.split_pure,
+                    self.samples,
+                    iteration,
+                    n_nodes,
+                    n_nodes_capacity,
+                )
+                for _ in range(n_estimators)
+            ]
+            self.trees = trees
+        else:
+            trees = [
+                TreeRegressor(
+                    self.n_features,
+                    self.step,
+                    self.loss,
+                    self.use_aggregation,
+                    self.split_pure,
+                    self.samples,
+                    trees_iteration[n_estimator],
+                    trees_n_nodes[n_estimator],
+                    trees_n_nodes_capacity[n_estimator],
+                )
+                for n_estimator in range(n_estimators)
+            ]
+            self.trees = trees
 
 
 @njit(void(get_type(AMFRegressorNoPython), get_array_2d_type(float32), float32[::1]))
@@ -262,6 +397,75 @@ def forest_regressor_predict(forest, X, predictions):
         for tree in forest.trees:
             prediction += tree_regressor_predict(tree, x_i, forest.use_aggregation)
         predictions[i] = prediction / forest.n_estimators
+
+
+def amf_regressor_nopython_to_dict(forest):
+    d = {}
+    for key, _ in spec_amf_regressor:
+        if key == "samples":
+            d["samples"] = samples_collection_to_dict(forest.samples)
+        elif key == "trees":
+            d["trees"] = [tree_regressor_to_dict(tree) for tree in forest.trees]
+        else:
+            d[key] = getattr(forest, key)
+    return d
+
+
+def dict_to_amf_regressor_nopython(d):
+    n_features = d["n_features"]
+    n_estimators = d["n_estimators"]
+    step = d["step"]
+    loss = d["loss"]
+    use_aggregation = d["use_aggregation"]
+    split_pure = d["split_pure"]
+    n_jobs = d["n_jobs"]
+    n_samples_increment = d["n_samples_increment"]
+    verbose = d["verbose"]
+    # Create the samples jitclass from a dict
+    samples = dict_to_samples_collection(d["samples"])
+
+    trees_dict = d["trees"]
+    trees_iteration = np.array(
+        [tree_dict["iteration"] for tree_dict in trees_dict], dtype=np.uint32
+    )
+    trees_n_nodes = np.array(
+        [tree_dict["nodes"]["n_nodes"] for tree_dict in trees_dict], dtype=np.uint32
+    )
+    trees_n_nodes_capacity = np.array(
+        [tree_dict["nodes"]["n_nodes_capacity"] for tree_dict in trees_dict],
+        dtype=np.uint32,
+    )
+    no_python = AMFRegressorNoPython(
+        n_features,
+        n_estimators,
+        step,
+        loss,
+        use_aggregation,
+        split_pure,
+        n_jobs,
+        n_samples_increment,
+        verbose,
+        samples,
+        trees_iteration,
+        trees_n_nodes,
+        trees_n_nodes_capacity,
+    )
+    no_python.iteration = d["iteration"]
+    no_python.samples = samples
+    trees = no_python.trees
+
+    # no_python is initialized, it remains to initialize the nodes
+    for n_estimator in range(n_estimators):
+        tree_dict = trees_dict[n_estimator]
+        nodes_dict = tree_dict["nodes"]
+        tree = trees[n_estimator]
+        nodes = tree.nodes
+        # Copy node information
+        dict_to_nodes_regressor(nodes, nodes_dict)
+        # Copy intensities
+        tree.intensities[:] = tree_dict["intensities"]
+
+    return no_python
 
 
 @njit(
@@ -518,6 +722,37 @@ class AMFLearner(object):
                 )
         weighted_depths = self._compute_weighted_depths(X)
         return weighted_depths
+
+    @classmethod
+    def load(cls, filename):
+        """Loads a AMF object from file (created with :meth:`save`)
+
+        Parameters
+        ----------
+        filename : :obj:`str`
+            Filename containing the serialized AMF object
+
+        Returns
+        -------
+        output : object
+            Either AMFClassifier or AMFRegressor contained in the file
+        """
+        with open(filename, "rb") as f:
+            d = pkl.load(f)
+            return cls._from_dict(d)
+
+    def save(self, filename):
+        """Saves a AMF object to file using pickle
+
+        Parameters
+        ----------
+        filename : :obj:`str`
+            Filename containing the serialized AMF object
+        """
+
+        with open(filename, "wb") as f:
+            d = self._to_dict()
+            pkl.dump(d, f)
 
     def _compute_predictions(self, X):
         pass
@@ -926,7 +1161,56 @@ class AMFClassifier(AMFLearner):
         if y_max not in self._classes:
             raise ValueError("n_classes=%d while y.max()=%d" % (self.n_classes, y_max))
 
+    def _to_dict(self):
+        attrs = [
+            "_n_features",
+            "n_classes",
+            "n_estimators",
+            "step",
+            "loss",
+            "use_aggregation",
+            "dirichlet",
+            "split_pure",
+            "n_jobs",
+            "n_samples_increment",
+            "random_state",
+            "verbose",
+            "_classes",
+        ]
+        d = {}
+        for key in attrs:
+            d[key] = getattr(self, key)
+        d["no_python"] = amf_classifier_nopython_to_dict(self.no_python)
+        return d
+
+    @classmethod
+    def _from_dict(cls, d):
+        amf = AMFClassifier(
+            n_classes=d["n_classes"],
+            n_estimators=d["n_estimators"],
+            step=d["step"],
+            loss=d["loss"],
+            use_aggregation=d["use_aggregation"],
+            dirichlet=d["dirichlet"],
+            split_pure=d["split_pure"],
+            n_jobs=d["n_jobs"],
+            n_samples_increment=d["n_samples_increment"],
+            random_state=d["random_state"],
+            verbose=d["verbose"],
+        )
+        amf._n_features = d["_n_features"]
+        amf.no_python = dict_to_amf_classifier_nopython(d["no_python"])
+        return amf
+
     def _instantiate_nopython_class(self):
+        trees_iteration = np.empty(0, dtype=np.uint32)
+        trees_n_nodes = np.empty(0, dtype=np.uint32)
+        trees_n_nodes_capacity = np.empty(0, dtype=np.uint32)
+        n_samples = 0
+        n_samples_capacity = 0
+        samples = SamplesCollection(
+            self.n_samples_increment, self.n_features, n_samples, n_samples_capacity
+        )
         self.no_python = AMFClassifierNoPython(
             self.n_classes,
             self.n_features,
@@ -939,6 +1223,10 @@ class AMFClassifier(AMFLearner):
             self.n_jobs,
             self.n_samples_increment,
             self.verbose,
+            samples,
+            trees_iteration,
+            trees_n_nodes,
+            trees_n_nodes_capacity,
         )
 
     def _partial_fit(self, X, y):
@@ -1278,6 +1566,14 @@ class AMFRegressor(AMFLearner):
         )
 
     def _instantiate_nopython_class(self):
+        trees_iteration = np.empty(0, dtype=np.uint32)
+        trees_n_nodes = np.empty(0, dtype=np.uint32)
+        trees_n_nodes_capacity = np.empty(0, dtype=np.uint32)
+        n_samples = 0
+        n_samples_capacity = 0
+        samples = SamplesCollection(
+            self.n_samples_increment, self.n_features, n_samples, n_samples_capacity
+        )
         self.no_python = AMFRegressorNoPython(
             self.n_features,
             self.n_estimators,
@@ -1288,7 +1584,47 @@ class AMFRegressor(AMFLearner):
             self.n_jobs,
             self.n_samples_increment,
             self.verbose,
+            samples,
+            trees_iteration,
+            trees_n_nodes,
+            trees_n_nodes_capacity,
         )
+
+    def _to_dict(self):
+        attrs = [
+            "_n_features",
+            "n_estimators",
+            "step",
+            "loss",
+            "use_aggregation",
+            "split_pure",
+            "n_jobs",
+            "n_samples_increment",
+            "random_state",
+            "verbose",
+        ]
+        d = {}
+        for key in attrs:
+            d[key] = getattr(self, key)
+        d["no_python"] = amf_regressor_nopython_to_dict(self.no_python)
+        return d
+
+    @classmethod
+    def _from_dict(cls, d):
+        amf = AMFRegressor(
+            n_estimators=d["n_estimators"],
+            step=d["step"],
+            loss=d["loss"],
+            use_aggregation=d["use_aggregation"],
+            split_pure=d["split_pure"],
+            n_jobs=d["n_jobs"],
+            n_samples_increment=d["n_samples_increment"],
+            random_state=d["random_state"],
+            verbose=d["verbose"],
+        )
+        amf._n_features = d["_n_features"]
+        amf.no_python = dict_to_amf_regressor_nopython(d["no_python"])
+        return amf
 
     def _partial_fit(self, X, y):
         forest_regressor_partial_fit(self.no_python, X, y)

@@ -1,7 +1,8 @@
 # Authors: Stephane Gaiffas <stephane.gaiffas@gmail.com>
 # License: BSD 3 clause
 import numpy as np
-from numba import jitclass, njit
+from numba import njit
+from numba.experimental import jitclass
 from .types import float32, uint32, get_array_2d_type, void
 from .utils import get_type, resize_array
 
@@ -40,7 +41,7 @@ class SamplesCollection(object):
     that such tests are performed beforehand in objects using this class.
     """
 
-    def __init__(self, n_samples_increment, n_features):
+    def __init__(self, n_samples_increment, n_features, n_samples, n_samples_capacity):
         """Instantiates a `SamplesCollection` instance.
 
         Parameters
@@ -52,12 +53,18 @@ class SamplesCollection(object):
         n_features : :obj:`int`
             Number of features used during training.
         """
-
-        self.n_samples_increment = n_samples_increment
-        self.n_samples_capacity = n_samples_increment
-        self.features = np.empty((n_samples_increment, n_features), dtype=float32)
-        self.labels = np.empty(n_samples_increment, dtype=float32)
-        self.n_samples = 0
+        if n_samples == 0:
+            self.n_samples_increment = n_samples_increment
+            self.n_samples_capacity = n_samples_increment
+            self.features = np.empty((n_samples_increment, n_features), dtype=float32)
+            self.labels = np.empty(n_samples_increment, dtype=float32)
+            self.n_samples = 0
+        else:
+            self.n_samples_increment = n_samples_increment
+            self.n_samples_capacity = n_samples_capacity
+            self.n_samples = n_samples
+            self.features = np.empty((n_samples_capacity, n_features), dtype=float32)
+            self.labels = np.empty(n_samples_capacity, dtype=float32)
 
 
 @njit(void(get_type(SamplesCollection), get_array_2d_type(float32), float32[::1]))
@@ -101,3 +108,24 @@ def add_samples(samples, X, y):
     samples.features[n_current_samples:n_samples_required] = X
     samples.labels[n_current_samples:n_samples_required] = y
     samples.n_samples += n_new_samples
+
+
+def samples_collection_to_dict(samples):
+    d = {}
+    for key, dtype in spec_samples_collection:
+        d[key] = getattr(samples, key)
+    d["n_features"] = samples.features.shape[1]
+    return d
+
+
+def dict_to_samples_collection(d):
+    n_samples_increment = d["n_samples_increment"]
+    n_samples_capacity = d["n_samples_capacity"]
+    n_samples = d["n_samples"]
+    n_features = d["n_features"]
+    samples = SamplesCollection(
+        n_samples_increment, n_features, n_samples, n_samples_capacity
+    )
+    samples.features[:] = d["features"]
+    samples.labels[:] = d["labels"]
+    return samples

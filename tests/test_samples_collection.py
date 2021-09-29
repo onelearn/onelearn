@@ -10,7 +10,7 @@ class TestSamplesCollection(object):
         n_samples_increment = 10
         n_features = 3
 
-        samples = SamplesCollection(n_samples_increment, n_features)
+        samples = SamplesCollection(n_samples_increment, n_features, 0, 0)
         X = np.zeros((4, n_features), dtype="float32")
         y = np.zeros(4, dtype="float32")
         add_samples(samples, X, y)
